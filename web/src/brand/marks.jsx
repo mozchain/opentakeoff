@@ -33,7 +33,7 @@ export function OtMark({ size = 20, color = "var(--mark, var(--cobalt))", title,
 export function OtWordmark({ size = 15, color = "var(--ink)", style }) {
   return (
     <span style={{ fontFamily: "var(--f-body)", fontWeight: 600, fontSize: size, lineHeight: 1, letterSpacing: "-0.01em",
-      color, whiteSpace: "nowrap", ...style }}>OpenTakeoff</span>
+      color, whiteSpace: "nowrap", ...style }}>RlevelTakeoff</span>
   );
 }
 
@@ -63,7 +63,7 @@ export function Wordmark({ size = 96, color = "var(--ink)", weight = 800, letter
         fontOpticalSizing: "auto",
       }}
     >
-      open<span style={{ fontStyle: "italic", color: "var(--cobalt)" }}>takeoff</span>
+      rlevel<span style={{ fontStyle: "italic", color: "var(--cobalt)" }}>takeoff</span>
     </span>
   );
 }
