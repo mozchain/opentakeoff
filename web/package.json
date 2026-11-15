@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test --test-timeout=20000 test/*.test.ts",
     "test:coverage": "node -e \"require('fs').mkdirSync('coverage',{recursive:true})\" && node --enable-source-maps --import tsx --test --test-timeout=20000 --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.test.ts",
@@ -24,7 +24,8 @@
     "build:door-reader": "node ../scripts/build-door-reader.mjs",
     "check:door-reader": "node ../scripts/build-door-reader.mjs --check-embedded",
     "check:door-reader:source": "node ../scripts/build-door-reader.mjs --check",
-    "bench:doors": "node --import tsx bench/doors/run.mts"
+    "bench:doors": "node --import tsx bench/doors/run.mts",
+    "deploy": "npm run build && wrangler deploy"
   },
   "engines": {
     "node": ">=24"
@@ -57,7 +58,8 @@
     "globals": "17.7.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vite": "^6.4.4"
+    "vite": "^6.4.4",
+    "wrangler": "^4.162.0"
   },
   "overrides": {
     "sharp": "^0.35.0",

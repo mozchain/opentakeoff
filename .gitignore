@@ -18,9 +18,11 @@ server/.venv/
 .env.*
 !.env.example
 
-# Netlify CLI local state (never commit; the root netlify.toml IS committed)
+# Netlify / Cloudflare Wrangler local state (never commit; config files ARE committed)
 .netlify/
 **/.netlify/
+.wrangler/
+**/.wrangler/
 
 # Editor / OS
 .DS_Store
