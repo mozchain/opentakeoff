@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "npm run build && wrangler dev",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test --test-timeout=20000 test/*.test.ts",
     "test:coverage": "node -e \"require('fs').mkdirSync('coverage',{recursive:true})\" && node --enable-source-maps --import tsx --test --test-timeout=20000 --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info test/*.test.ts",
@@ -25,7 +25,7 @@
     "check:door-reader": "node ../scripts/build-door-reader.mjs --check-embedded",
     "check:door-reader:source": "node ../scripts/build-door-reader.mjs --check",
     "bench:doors": "node --import tsx bench/doors/run.mts",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name rleveltakeoff --branch main"
   },
   "engines": {
     "node": ">=24"
