@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { Z } from "../lib/ui.js";
 import { ScanStar } from "../brand/marks.jsx";
 import { keyText } from "../lib/keys.ts";
+import { areaVal, areaUnit } from "../lib/units";
 import { TOUR_STEPS, TOUR_CARD_W as CARD_W, TOUR_CARD_GAP, cardPlacement, stepBody } from "../lib/firstTakeoff.js";
 
 // Outline the first VISIBLE element matching `selector`. Polled rather than
@@ -50,7 +51,7 @@ function Spotlight({ selector }) {
   );
 }
 
-const fmtSf = (n) => `${Math.round(n).toLocaleString()} SF`;
+const fmtArea = (n, units = "metric") => `${Math.round(areaVal(n, units)).toLocaleString()} ${areaUnit(units)}`;
 
 const GAP = TOUR_CARD_GAP;
 
@@ -78,7 +79,7 @@ function useRailPlacement(cardRef) {
   return place;
 }
 
-export default function FirstTakeoffTour({ done, step, sheetOpen, sampleBusy, onLoadSample, onClose, onConnect, result }) {
+export default function FirstTakeoffTour({ done, step, sheetOpen, sampleBusy, onLoadSample, onClose, onConnect, result, units = "metric" }) {
   const doneSet = new Set(done);
   const n = TOUR_STEPS.findIndex((s) => s.id === step?.id);
   const finished = !step;
@@ -127,7 +128,7 @@ export default function FirstTakeoffTour({ done, step, sheetOpen, sampleBusy, on
         {finished ? (
           <div style={{ marginTop: 8 }}>
             <strong style={{ fontFamily: "var(--f-display)", fontSize: 16 }}>
-              {result?.sf ? `You measured ${fmtSf(result.sf)}${result.tag ? ` of ${result.tag}` : ""}.` : "That's a takeoff."}
+              {result?.sf ? `You measured ${fmtArea(result.sf, units)}${result.tag ? ` of ${result.tag}` : ""}.` : "That's a takeoff."}
             </strong>
             <p style={{ fontSize: 12.5, lineHeight: 1.55, color: "var(--ink-soft)", margin: "6px 0 12px" }}>
               Same loop for every finish: pick a condition, trace, read the Report. Press <kbd>?</kbd> any time for the shortcuts.

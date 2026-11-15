@@ -6089,7 +6089,8 @@ export default function TakeoffCanvas() {
     if (!pv) return;
     rescaleSheet(pv.key, pv.upp);
     setScaleSources((s) => ({ ...s, [pv.key]: pv.source }));
-    showScaleGuide(pv.key, pv.upp, STANDARD_SCALES.find((x) => Math.abs(x.upp - pv.upp) < 1e-9)?.label || pv.source);
+    const revStd = STANDARD_SCALES.find((x) => Math.abs(x.upp - pv.upp) < 1e-9)?.label;
+    showScaleGuide(pv.key, pv.upp, (units === "metric" && revStd && !revStd.includes(":") ? `1:${Math.round(pv.upp * 72 * RENDER_SCALE * 12)}` : revStd) || pv.source);
   }
 
   function applyCalibration() {
@@ -9977,7 +9978,15 @@ export default function TakeoffCanvas() {
     </div>
   ) : null;
   const faSY = (sf) => (units === "metric" ? fa(sf) : `${num(sf)} SF · ${num(sf / 9)} SY`);
-  const stdValue = unitsPerPx ? (STANDARD_SCALES.find((s) => Math.abs(s.upp - unitsPerPx) < 1e-9)?.label || "") : "";
+  const fmtScaleLabel = (label, upp) => {
+    if (!label) return "";
+    if (units === "metric" && !label.includes(":") && upp > 0) {
+      return `1:${Math.round(upp * 72 * RENDER_SCALE * 12)}`;
+    }
+    return label;
+  };
+  const rawStdLabel = unitsPerPx ? (STANDARD_SCALES.find((s) => Math.abs(s.upp - unitsPerPx) < 1e-9)?.label || "") : "";
+  const stdValue = fmtScaleLabel(rawStdLabel, unitsPerPx);
   // Check tool: measured span at the current scale vs what the drawing says
   const checkPanel = check.length ? panelAt(check[0][0]) : null;
   const checkUpp = checkPanel ? uppFor(checkPanel.key) : null;
@@ -10573,10 +10582,11 @@ export default function TakeoffCanvas() {
     : scaleMismatch || scaleNeedsConfirm
       ? { border: "1px solid var(--c-warning)", color: "var(--c-warning)" }
       : { border: "1px solid var(--c-positive)", color: "var(--c-positive)" };
+  const detLabel = scaleDet ? fmtScaleLabel(scaleDet.label, scaleDet.upp) : "";
   const scaleTitle = scaleNeedsConfirm
     ? `An agent set this sheet's scale — no person has confirmed it. Check it against a printed dimension (K), then confirm from this menu; quantities stand on this number.`
     : scaleMismatch
-      ? `You set ${stdValue}, but the plan notes ${scaleDet.label} on ${labelFor(focusPanel)} — double-check before tracing.`
+      ? `You set ${stdValue}, but the plan notes ${detLabel} on ${labelFor(focusPanel)} — double-check before tracing.`
       : `Set the scale for ${labelFor(focusPanel)} — remembered per sheet${groupKeys.length > 1 ? " (targets the sheet you last clicked)" : ""}`;
   const scaleItems = [];
   if (scaleNeedsConfirm) {
@@ -10591,7 +10601,7 @@ export default function TakeoffCanvas() {
   // one-step revert after a rescale that changed committed quantities on this
   // sheet — the oops-hatch for a mistyped recalibrate (ephemeral, one slot)
   if (prevScale && prevScale.key === focusPanel.key && scales[focusPanel.key] !== prevScale.upp) {
-    const wasLabel = STANDARD_SCALES.find((x) => Math.abs(x.upp - prevScale.upp) < 1e-9)?.label
+    const wasLabel = fmtScaleLabel(STANDARD_SCALES.find((x) => Math.abs(x.upp - prevScale.upp) < 1e-9)?.label, prevScale.upp)
       || (prevScale.source === "calibrated" ? "calibrated" : "custom");
     scaleItems.push({
       id: "revert-scale", icon: "undo",
@@ -10605,32 +10615,23 @@ export default function TakeoffCanvas() {
     scaleItems.push({ section: "From the plan" });
     scaleItems.push({
       id: "use-detected", icon: "target", tint: "var(--c-positive)",
-      label: `Plan says ${scaleDet.label}${scaleDet.multi ? " ±" : ""} — use it`,
-      title: `The plan notes ${scaleDet.label} on ${labelFor(focusPanel)}${scaleDet.multi ? " — this sheet shows several scales (details are often larger); confirm against a known dimension" : ""}. Hover previews a calibrated guide bar on the sheet so you can sanity-check it.`,
-      onSelect: () => { rescaleSheet(focusPanel.key, scaleDet.upp); setScaleSources((s) => ({ ...s, [focusPanel.key]: "detected" })); showScaleGuide(focusPanel.key, scaleDet.upp, scaleDet.label); },
+      label: `Plan says ${detLabel}${scaleDet.multi ? " ±" : ""} — use it`,
+      title: `The plan notes ${detLabel} on ${labelFor(focusPanel)}${scaleDet.multi ? " — this sheet shows several scales (details are often larger); confirm against a known dimension" : ""}. Hover previews a calibrated guide bar on the sheet so you can sanity-check it.`,
+      onSelect: () => { rescaleSheet(focusPanel.key, scaleDet.upp); setScaleSources((s) => ({ ...s, [focusPanel.key]: "detected" })); showScaleGuide(focusPanel.key, scaleDet.upp, detLabel); },
       // hover previews the guide bar behind the open menu — only while the
       // sheet is still UNSCALED (upstream's gate: on a scaled sheet the bar
       // would advertise a scale the sheet is not using, on the very affordance
       // whose job is sanity-checking bar length). The preview dies on hover-out
       // AND on menu close however it happens (onScaleMenuDepth below) — an
       // ACCEPTED bar (onSelect) is not a preview and rides out its 8 s.
-      onHover: (on) => { if (on) { if (!scales[focusPanel.key]) showScaleGuide(focusPanel.key, scaleDet.upp, scaleDet.label, true); } else clearPreviewGuide(); },
+      onHover: (on) => { if (on) { if (!scales[focusPanel.key]) showScaleGuide(focusPanel.key, scaleDet.upp, detLabel, true); } else clearPreviewGuide(); },
     });
   }
   const metricScales = STANDARD_SCALES.filter((s) => s.label.includes(":"));
   const imperialScales = STANDARD_SCALES.filter((s) => !s.label.includes(":"));
-  const pushScale = (s) => scaleItems.push({ id: s.label, label: s.label, active: stdValue === s.label, onSelect: () => { rescaleSheet(focusPanel.key, s.upp); setScaleSources((sc) => ({ ...sc, [focusPanel.key]: "standard" })); showScaleGuide(focusPanel.key, s.upp, s.label); } });
-  if (units === "metric") {
-    scaleItems.push({ section: "Standard (metric)" });
-    metricScales.forEach(pushScale);
-    scaleItems.push({ section: "Imperial" });
-    imperialScales.forEach(pushScale);
-  } else {
-    scaleItems.push({ section: "Standard (imperial)" });
-    imperialScales.forEach(pushScale);
-    scaleItems.push({ section: "Metric" });
-    metricScales.forEach(pushScale);
-  }
+  const pushScale = (s) => scaleItems.push({ id: s.label, label: s.label, active: rawStdLabel === s.label, onSelect: () => { rescaleSheet(focusPanel.key, s.upp); setScaleSources((sc) => ({ ...sc, [focusPanel.key]: "standard" })); showScaleGuide(focusPanel.key, s.upp, s.label); } });
+  scaleItems.push({ section: "Standard" });
+  (units === "metric" ? metricScales : imperialScales).forEach(pushScale);
   scaleItems.push("divider");
   scaleItems.push({ id: "calibrate", icon: "calibrate", label: "Calibrate two points…", title: "Calibrate — click two points of a known dimension", active: tool === "calibrate", onSelect: () => setTool("calibrate") });
   scaleItems.push({ id: "check", icon: "check", label: "Check a dimension…", shortcut: "K", title: "Check a dimension (K) — click both ends of a printed dimension string; compares the measured length against what the drawing says", active: tool === "check", onSelect: () => setTool("check") });
@@ -13301,7 +13302,7 @@ export default function TakeoffCanvas() {
       {companySetupOpen && <CompanySetup onClose={() => setCompanySetupOpen(false)} onSaved={() => setCompanyRev((r) => r + 1)} />}
       {tour && view === "canvas" && !focusMode && !guideOpen && !connectOpen && (
         <FirstTakeoffTour done={tour.done} step={currentStep(tour.done)} sheetOpen={tourSheetOpen}
-          sampleBusy={tourSampleBusy} onLoadSample={loadSampleForTour} result={tourResult}
+          sampleBusy={tourSampleBusy} onLoadSample={loadSampleForTour} result={tourResult} units={units}
           onClose={() => setTour(null)} onConnect={() => { setTour(null); setConnectOpen(true); }} />
       )}
       {/* on-device OCR's download notice (#471): modal over everything, the

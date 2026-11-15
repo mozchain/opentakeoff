@@ -173,7 +173,7 @@ function LibDraftInput({ name, value, number, placeholder, width, onCommitText }
 // Coverage preset picker — shared by the condition-line editor and the
 // Materials tab so a library "Adhesive" and an attached line offer the same
 // notch/roller list. Renders nothing when the kind has no preset table.
-function CoveragePresetSelect({ material: m, onPick }) {
+function CoveragePresetSelect({ material: m, onPick, units = "metric" }) {
   const presets = (m.basis || "area") === "area" ? MATERIAL_PRESETS[materialKind(m)] : undefined;
   if (!presets) return null;
   return (
@@ -182,7 +182,7 @@ function CoveragePresetSelect({ material: m, onPick }) {
       title="Coverage preset — trowel notch / spread rate. Generic industry-typical values; verify against the product data sheet."
       style={{ ...ip, background: "var(--paper-bright)" }}>
       <option value="">preset…</option>
-      {presets.map((t) => <option key={t.label} value={t.label}>{t.label} · {t.per} SF/{m.unit || "unit"}</option>)}
+      {presets.map((t) => <option key={t.label} value={t.label}>{t.label} · {units === "metric" ? Math.round(areaVal(t.per, "metric") * 10) / 10 : t.per} {areaUnit(units)}/{m.unit || "unit"}</option>)}
     </select>
   );
 }
@@ -190,7 +190,7 @@ function CoveragePresetSelect({ material: m, onPick }) {
 // Editable supporting-materials rows for a condition (coverage-derived order qty).
 export function MaterialsEditor({ materials, onAdd, onUpdate, onRemove, library, libById, overridden, onRevert, onAttach, onPromote,
     twin = false, parentTag = "", dropped = [], parentRows = [], onFollowFamilyRow, onRestoreDroppedRow,
-    heightFt = 0 }) {
+    heightFt = 0, units = "metric" }) {
   // library link affordances (#47, all optional so the editor works standalone):
   // linked lines show ⛓; a field differing from its library entry tints amber
   // and grows a per-field ↺ revert; unlinked lines can be promoted to the library
@@ -257,10 +257,10 @@ export function MaterialsEditor({ materials, onAdd, onUpdate, onRemove, library,
             {itemRule(m) === "each" ? <span style={{ color: "var(--ink-muted)" }}>1</span> : perInput(m)}
             {ov("per") && rv(m, "per")}
             <select name="material-basis" value={m.basis || "area"} onChange={(e) => onUpdate(m.id, { basis: e.target.value })} style={{ ...ip, background: "var(--paper-bright)", ...(ov("basis") ? { border: OV } : {}) }}>
-              <option value="area">floor SF</option>
-              <option value="linear">linear LF</option>
+              <option value="area">floor {areaUnit(units)}</option>
+              <option value="linear">linear {lenUnit(units)}</option>
               <option value="count">each</option>
-              <option value="seam_lf" title="Figured seam length from the roll layout — 0 until this condition carries a roll setup">seam LF</option>
+              <option value="seam_lf" title="Figured seam length from the roll layout — 0 until this condition carries a roll setup">seam {lenUnit(units)}</option>
             </select>
             {ov("basis") && rv(m, "basis")}
             <label style={{ display: "inline-flex", alignItems: "center", gap: 4, color: ov("round") ? "var(--c-warning)" : "var(--ink-muted)" }} title="Round up to whole units (you buy whole buckets/bags)">
@@ -272,7 +272,7 @@ export function MaterialsEditor({ materials, onAdd, onUpdate, onRemove, library,
                 onChange={(e) => { const w = Math.max(0, parseFloat(e.target.value) || 0); onUpdate(m.id, { waste_pct: w > 0 ? w : undefined }); }}
                 style={{ ...ip, width: 44 }} />% waste
             </label>
-            <CoveragePresetSelect material={m} onPick={(patch) => onUpdate(m.id, patch)} />
+            <CoveragePresetSelect material={m} units={units} onPick={(patch) => onUpdate(m.id, patch)} />
             <input name="material-note" value={m.note || ""} onChange={(e) => onUpdate(m.id, { note: e.target.value })} placeholder="note (coats, trowel…)" style={{ ...ip, width: 150, ...(ov("note") ? { border: OV } : {}) }} />
             {ov("note") && rv(m, "note")}
             {!lm && onPromote && (
@@ -426,7 +426,7 @@ function AddValueInput({ onAdd }) {
 // the docked panel AND the restored top-bar band render the SAME editor (one
 // source of truth, like the app's single activateCondition path). Owns only its
 // hatch-popover open state; everything else flows through the passed handlers.
-export function ConditionAppearanceEditor({ cond: c, onUpdateCond, onSetCondParam, onAssignAttr, conditionColumns = [], layout = "stack", units = "imperial", rollInfo = null }) {
+export function ConditionAppearanceEditor({ cond: c, onUpdateCond, onSetCondParam, onAssignAttr, conditionColumns = [], layout = "stack", units = "metric", rollInfo = null }) {
   const [hatchOpen, setHatchOpen] = useState(false);
   const activeColor = c.color || "#c96442";
   // Top-bar band ("row") only: the two palettes fold into two swatch buttons
@@ -622,9 +622,9 @@ export function ConditionAppearanceEditor({ cond: c, onUpdateCond, onSetCondPara
               <span style={{ color: "var(--ink-muted)" }}>Roll</span>
               {rs.material === "carpet" ? (
                 <select name="condition-roll-width" value={String(rs.roll_width_ft)} onChange={(e) => patch({ roll_width_ft: parseFloat(e.target.value) || 12 })} style={sel}
-                  title="Roll width — broadloom comes 12′ or 15′">
-                  <option value="12">12′</option>
-                  <option value="15">15′</option>
+                  title="Roll width — broadloom comes 3.66 m (12′) or 4.57 m (15′)">
+                  <option value="12">{units === "metric" ? "3.66 m (12′)" : "12′"}</option>
+                  <option value="15">{units === "metric" ? "4.57 m (15′)" : "15′"}</option>
                 </select>
               ) : (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }} title="Roll width — resilient sheet widths vary by product (6′, 6′6″, 12′…)">
@@ -653,15 +653,15 @@ export function ConditionAppearanceEditor({ cond: c, onUpdateCond, onSetCondPara
               <span style={{ color: "var(--ink-muted)" }}>″ · sells by</span>
               <select name="condition-roll-unit" value={rs.price_unit || "sf"} onChange={(e) => patch({ price_unit: e.target.value })} style={sel}
                 title="The unit this material sells in — a unit, never a dollar (the takeoff stays quantities-only)">
-                <option value="sy">SY</option>
-                <option value="sf">SF</option>
-                <option value="lf">LF</option>
+                <option value="sy">{units === "metric" ? "m² (SY)" : "SY"}</option>
+                <option value="sf">{areaUnit(units)}</option>
+                <option value="lf">{lenUnit(units)}</option>
               </select>
             </div>
             {rollInfo && (
               <div style={{ fontFamily: "var(--f-mono,monospace)", fontSize: 11, color: "var(--ink)" }}
                 title="The figured order — how far down the roll the cuts reach (side-by-side cuts share length), rounded up to the inch. The Roll panel has the cut diagram.">
-                Figured: order {ftIn(rollInfo.orderFt)} · {rollInfo.qty} {rollInfo.unit.toUpperCase()}
+                Figured: order {units === "metric" ? `${num(lenVal(rollInfo.orderFt, "metric"))} m` : ftIn(rollInfo.orderFt)} · {rollInfo.qty} {rollInfo.unit.toUpperCase()}
                 {rollInfo.config.rollLengthFt > 0 ? ` · ${rollInfo.rollCount} roll${rollInfo.rollCount === 1 ? "" : "s"}` : ""}
                 {rollInfo.oversize && <span style={{ color: "var(--c-danger)" }}> · a cut exceeds one roll</span>}
               </div>
@@ -700,7 +700,7 @@ export function ConditionAppearanceEditor({ cond: c, onUpdateCond, onSetCondPara
 // a wrong bid with a machine's confidence behind it — so those are listed here
 // with their length and their gap, reported and never counted, for someone to
 // place with the drawing in front of them.
-function TransitionsAction({ cond: c, sources, draft, setDraft, result, setResult, onDerive, onLocate2 }) {
+function TransitionsAction({ cond: c, sources, draft, setDraft, result, setResult, onDerive, onLocate2, units = "metric" }) {
   const open = draft.id === c.id;
   // the transition lands on its OWN tag, so this condition is never a source —
   // deriving onto C-1 would add the joint's LF to the carpet it separates
@@ -746,7 +746,7 @@ function TransitionsAction({ cond: c, sources, draft, setDraft, result, setResul
             <div style={{ marginTop: 6 }}>
               <div style={{ color: result.committed ? "var(--c-positive)" : "var(--ink-muted)" }}>
                 {result.committed
-                  ? `${result.committed} run${result.committed === 1 ? "" : "s"} · ${result.total_lf} LF proposed on ${result.onto} — dashed until you Accept.`
+                  ? `${result.committed} run${result.committed === 1 ? "" : "s"} · ${num(lenVal(result.total_lf, units))} ${lenUnit(units)} proposed on ${result.onto} — dashed until you Accept.`
                   : "No butt joints between these two on the open sheets."}
               </div>
               {result.withheld?.length > 0 && (
@@ -758,7 +758,7 @@ function TransitionsAction({ cond: c, sources, draft, setDraft, result, setResul
                   <ul style={{ margin: "3px 0 0", paddingLeft: 14, color: "var(--ink)" }}>
                     {result.withheld.map((w, i) => (
                       <li key={`${w.between_shape_ids.join("-")}-${i}`} style={{ marginBottom: 1 }}>
-                        {w.length_lf} LF across {w.gap_in}″ of wall
+                        {num(lenVal(w.length_lf, units))} {lenUnit(units)} across {units === "metric" ? `${Math.round(w.gap_in * 25.4)} mm` : `${w.gap_in}″`} of wall
                         <span style={{ color: "var(--ink-muted)" }}> — {w.between.join(" / ")}</span>
                         {onLocate2 && (
                           <button onClick={() => onLocate2(w.sheet_id, w.at)} title="Center the sheet on this run — find the door and measure the threshold there"
@@ -915,7 +915,7 @@ function AssemblyBar({ cond, assemblies, onApply }) {
 }
 
 function TakeoffsPanel({
-  open, width, overlay = false, multiSheet, dockSide, layoutLocked = false, dockHandle, units = "imperial",
+  open, width, overlay = false, multiSheet, dockSide, layoutLocked = false, dockHandle, units = "metric",
   conditions, activeCond, visRowById, projRowById = new Map(), conditionColumns, shapeLabels = [], templates, palette = [], rollByCond = null,
   transitionSources = [],
   matLib, matLibById, linkedCountById,
@@ -1195,7 +1195,7 @@ function TakeoffsPanel({
                   <span style={{ color: "var(--ink-muted)" }}>{p.same_condition ? "⧉" : "↔"}</span>
                   <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {p.same_condition ? `double trace${mine.label ? ` · ${mine.label}` : ""}` : `${other.condition}${other.label ? ` · ${other.label}` : ""}`}
-                    <span style={{ color: "var(--ink-muted)" }}> · {p.shared_sf === 0 ? "<0.01" : p.shared_sf} SF shared · {Math.round(p.fraction_of_smaller * 100)}%{p.a.reviewed && p.b.reviewed ? " · both accepted" : ""}</span>
+                    <span style={{ color: "var(--ink-muted)" }}> · {areaVal(p.shared_sf, units) < 0.01 ? "<0.01" : num(areaVal(p.shared_sf, units))} {areaUnit(units)} shared · {Math.round(p.fraction_of_smaller * 100)}%{p.a.reviewed && p.b.reviewed ? " · both accepted" : ""}</span>
                   </span>
                   <button onClick={() => onLookAtCollision?.(p)} title="Frame both shapes on the plan"
                     style={{ flexShrink: 0, padding: "1px 6px", borderRadius: 0, border: "1px solid var(--ink-faint)", background: "transparent", color: "var(--cobalt)", cursor: "pointer", fontSize: 10.5, fontWeight: 600 }}>Look</button>
@@ -1237,7 +1237,7 @@ function TakeoffsPanel({
         })()}
         {on && <ConditionAppearanceEditor cond={c} onUpdateCond={onUpdateCond} onSetCondParam={onSetCondParam} onAssignAttr={onAssignAttr} conditionColumns={conditionColumns} units={units} rollInfo={rollByCond?.get(c.id) || null} />}
         {on && onDeriveTransitions && <TransitionsAction cond={c} sources={transitionSources} draft={transDraft} setDraft={setTransDraft}
-          result={transResult} setResult={setTransResult} onDerive={onDeriveTransitions} onLocate2={onLocateTransition} />}
+          result={transResult} setResult={setTransResult} onDerive={onDeriveTransitions} onLocate2={onLocateTransition} units={units} />}
         {matOn && (
           <div style={{ padding: "8px 12px 10px", background: "var(--paper-cream)", borderTop: "1px solid var(--ink-faint)", fontSize: 11.5 }}>
             <div style={{ marginBottom: 6, color: "var(--ink-muted)" }}>Supporting Materials — order qty = measured ÷ coverage, rounded up.</div>
@@ -1280,7 +1280,7 @@ function TakeoffsPanel({
               twin={!!c.variant_of} parentTag={(conditions.find((x) => x.id === c.variant_of) || {}).finish_tag || ""}
               dropped={c.materials_dropped || []} parentRows={(conditions.find((x) => x.id === c.variant_of) || {}).materials || []}
               onFollowFamilyRow={onFollowFamilyRow} onRestoreDroppedRow={onRestoreDroppedRow}
-              heightFt={c.height_ft} />
+              heightFt={c.height_ft} units={units} />
             <AssemblyBar cond={c} assemblies={assemblies} onApply={onApplyAssembly} />
             {/* Duplicate, inline — deliberately NOT a window.prompt: those freeze a
                 CDP/automation-driven session dead, and this panel is scripted in demos. */}
@@ -1505,15 +1505,15 @@ function TakeoffsPanel({
                     <LibDraftInput name="library-material-per" number value={lm.per || ""} placeholder="0" width={62}
                       onCommitText={(t) => onUpdateLibMaterial(lm.id, { per: Math.max(0, parseFloat(t) || 0) })} />
                     <select name="library-material-basis" value={lm.basis || "area"} onChange={(e) => onUpdateLibMaterial(lm.id, { basis: e.target.value })} style={{ ...ip, background: "var(--paper-bright)" }}>
-                      <option value="area">floor SF</option>
-                      <option value="linear">linear LF</option>
+                      <option value="area">floor {areaUnit(units)}</option>
+                      <option value="linear">linear {lenUnit(units)}</option>
                       <option value="count">each</option>
-                      <option value="seam_lf" title="Figured seam length from the roll layout — 0 until the condition carries a roll setup">seam LF</option>
+                      <option value="seam_lf" title="Figured seam length from the roll layout — 0 until the condition carries a roll setup">seam {lenUnit(units)}</option>
                     </select>
                     <label style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--ink-muted)" }} title="Round up to whole units">
                       <input name="library-material-round" type="checkbox" checked={lm.round !== false} onChange={(e) => onUpdateLibMaterial(lm.id, { round: e.target.checked })} />round up
                     </label>
-                    <CoveragePresetSelect material={lm} onPick={(patch) => onUpdateLibMaterial(lm.id, patch)} />
+                    <CoveragePresetSelect material={lm} units={units} onPick={(patch) => onUpdateLibMaterial(lm.id, patch)} />
                     <LibDraftInput name="library-material-note" value={lm.note || ""} placeholder="note" width={120}
                       onCommitText={(t) => onUpdateLibMaterial(lm.id, { note: t })} />
                   </div>

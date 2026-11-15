@@ -160,7 +160,7 @@ function ConditionsDock({
                 twin={!!c.variant_of} parentTag={(conditions.find((x) => x.id === c.variant_of) || {}).finish_tag || ""}
                 dropped={c.materials_dropped || []} parentRows={(conditions.find((x) => x.id === c.variant_of) || {}).materials || []}
                 onFollowFamilyRow={onFollowFamilyRow} onRestoreDroppedRow={onRestoreDroppedRow}
-                heightFt={c.height_ft} />
+                heightFt={c.height_ft} units={units} />
             </div>
           )}
 
