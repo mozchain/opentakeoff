@@ -73,6 +73,15 @@ const eng = (ftPerIn: number): number => ftPerIn / PX_PER_IN;        // ftPerIn 
 // unit system only changes what the UI displays (lib/units.ts).
 const metric = (r: number): number => (r / 12) / PX_PER_IN;
 export const STANDARD_SCALES: Scale[] = [
+  { label: "1:20", upp: metric(20) },
+  { label: "1:25", upp: metric(25) },
+  { label: "1:50", upp: metric(50) },
+  { label: "1:75", upp: metric(75) },
+  { label: "1:100", upp: metric(100) },
+  { label: "1:125", upp: metric(125) },
+  { label: "1:200", upp: metric(200) },
+  { label: "1:250", upp: metric(250) },
+  { label: "1:500", upp: metric(500) },
   { label: '1/16" = 1\'-0"', upp: arch(1 / 16) },
   { label: '3/32" = 1\'-0"', upp: arch(3 / 32) },
   { label: '1/8" = 1\'-0"', upp: arch(1 / 8) },
@@ -90,15 +99,6 @@ export const STANDARD_SCALES: Scale[] = [
   { label: '1" = 40\'', upp: eng(40) },
   { label: '1" = 50\'', upp: eng(50) },
   { label: '1" = 60\'', upp: eng(60) },
-  { label: "1:20", upp: metric(20) },
-  { label: "1:25", upp: metric(25) },
-  { label: "1:50", upp: metric(50) },
-  { label: "1:75", upp: metric(75) },
-  { label: "1:100", upp: metric(100) },
-  { label: "1:125", upp: metric(125) },
-  { label: "1:200", upp: metric(200) },
-  { label: "1:250", upp: metric(250) },
-  { label: "1:500", upp: metric(500) },
 ];
 
 // Pull the drawing's sheet number (e.g. A003, A-101, S1.1) from the title block —

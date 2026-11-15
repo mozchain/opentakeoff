@@ -10540,7 +10540,7 @@ export default function TakeoffCanvas() {
   sheetMenuItems.push({ section: "Profile — your templates, stamps & report setup" });
   sheetMenuItems.push({
     id: "company-setup", icon: "document", label: "Company setup…",
-    title: "Your company on proposals — trade name, logo, phone, email, license — plus default overhead, profit and sales tax and your proposal inclusions, exclusions and terms. Saved on this device; Export profile carries it.",
+    title: "Your company on proposals — trade name, logo, phone, email, license — plus default overhead, profit and GST and your proposal inclusions, exclusions and terms. Saved on this device; Export profile carries it.",
     onSelect: () => setCompanySetupOpen(true),
   });
   sheetMenuItems.push({
@@ -10617,11 +10617,24 @@ export default function TakeoffCanvas() {
       onHover: (on) => { if (on) { if (!scales[focusPanel.key]) showScaleGuide(focusPanel.key, scaleDet.upp, scaleDet.label, true); } else clearPreviewGuide(); },
     });
   }
-  scaleItems.push({ section: "Standard" });
-  for (const s of STANDARD_SCALES) scaleItems.push({ id: s.label, label: s.label, active: stdValue === s.label, onSelect: () => { rescaleSheet(focusPanel.key, s.upp); setScaleSources((sc) => ({ ...sc, [focusPanel.key]: "standard" })); showScaleGuide(focusPanel.key, s.upp, s.label); } });
+  const metricScales = STANDARD_SCALES.filter((s) => s.label.includes(":"));
+  const imperialScales = STANDARD_SCALES.filter((s) => !s.label.includes(":"));
+  const pushScale = (s) => scaleItems.push({ id: s.label, label: s.label, active: stdValue === s.label, onSelect: () => { rescaleSheet(focusPanel.key, s.upp); setScaleSources((sc) => ({ ...sc, [focusPanel.key]: "standard" })); showScaleGuide(focusPanel.key, s.upp, s.label); } });
+  if (units === "metric") {
+    scaleItems.push({ section: "Standard (metric)" });
+    metricScales.forEach(pushScale);
+    scaleItems.push({ section: "Imperial" });
+    imperialScales.forEach(pushScale);
+  } else {
+    scaleItems.push({ section: "Standard (imperial)" });
+    imperialScales.forEach(pushScale);
+    scaleItems.push({ section: "Metric" });
+    metricScales.forEach(pushScale);
+  }
   scaleItems.push("divider");
   scaleItems.push({ id: "calibrate", icon: "calibrate", label: "Calibrate two points…", title: "Calibrate — click two points of a known dimension", active: tool === "calibrate", onSelect: () => setTool("calibrate") });
   scaleItems.push({ id: "check", icon: "check", label: "Check a dimension…", shortcut: "K", title: "Check a dimension (K) — click both ends of a printed dimension string; compares the measured length against what the drawing says", active: tool === "check", onSelect: () => setTool("check") });
+  scaleItems.push({ id: "toggle-units", label: units === "metric" ? "Units: Metric (m² / m) — switch to ft" : "Units: Imperial (SF / LF) — switch to m", onSelect: () => setUnits((u) => (u === "metric" ? "imperial" : "metric")) });
   scaleItems.push({ note: "Remembered per sheet." });
 
   // One-Click fill sensitivity — lives in the render menu now, so arming
@@ -11934,6 +11947,8 @@ export default function TakeoffCanvas() {
           onBack={() => setView("gallery")} onGallery={() => setView("gallery")}
           sheets={workspaceSheets} current={treeCurrent} onSheet={(key) => openSheets([key], false)} onMenuDepth={onMenuDepth}
           scaleMenu={<ToolMenu title={scaleTitle} onOpenChange={onScaleMenuDepth} face={<span data-tour="scale" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Icon name="scaleRule" size={16} />{scaleFace}</span>} faceStyle={{ fontFamily: "var(--f-body)", fontSize: 13.5, fontWeight: 500, ...scaleFaceStyle }} menuStyle={{ minWidth: 250 }} items={scaleItems} />}
+          units={units}
+          onToggleUnits={() => setUnits((u) => (u === "metric" ? "imperial" : "metric"))}
           action={finishOk && <button type="button" className="cd-btn" style={{ flex: "0 0 auto", marginLeft: 6 }} onClick={finishShape}>Finish ({poly.length})</button>}
           onList={() => setShowReport(true)} total={estTotal} onEstimate={openEstimate}
           moreItems={moreItems}

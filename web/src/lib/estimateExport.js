@@ -55,7 +55,7 @@ export function estimateWorkbook({ est, projectName = "", companyName = "", clie
     [],
     ["Material", est.material],
     ["Labor", est.labor],
-    [`Sales tax on material (${st.tax_pct}%)`, est.tax],
+    [`GST on material (${st.tax_pct}%)`, est.tax],
     ["Cost", est.cost],
     [`Overhead (${st.overhead_pct}%)`, est.overhead],
     [`Profit (${st.profit_pct}% ${MODE[st.profit_mode]})`, est.profit],

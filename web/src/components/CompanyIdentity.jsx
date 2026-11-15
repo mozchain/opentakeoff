@@ -88,7 +88,7 @@ export function CompanyIdentityFields({ company, contact = false }) {
       <label style={row}>
         <span className="field-label">Address</span>
         <textarea name="company-address" autoComplete="street-address" value={active.address || ""} onChange={(e) => editActive({ address: e.target.value })}
-          rows={2} placeholder={"Street\nCity, ST"} className="field-input" style={{ marginTop: 4, resize: "vertical" }} />
+          rows={2} placeholder={"Street\nSuburb, State Postcode"} className="field-input" style={{ marginTop: 4, resize: "vertical" }} />
       </label>
       {contact && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
@@ -103,7 +103,7 @@ export function CompanyIdentityFields({ company, contact = false }) {
               className="field-input" style={{ marginTop: 4 }} />
           </label>
           <label style={{ ...row, flex: "1 1 140px" }}>
-            <span className="field-label">License no.</span>
+            <span className="field-label">ABN / Licence no.</span>
             <input name="company-license" autoComplete="off" value={active.license || ""} onChange={(e) => editActive({ license: e.target.value })}
               className="field-input" style={{ marginTop: 4 }} />
           </label>

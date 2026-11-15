@@ -35,13 +35,13 @@ function splitSheetLabel(label = "") {
   return m ? { num: m[1], title: m[2] } : { num: "", title: label };
 }
 
-export function PremiumTopBar({ title, subtitle, onBack, onGallery, sheets, current, onSheet, onMenuDepth, scaleMenu, action,
+export function PremiumTopBar({ title, subtitle, onBack, onGallery, sheets, current, onSheet, onMenuDepth, scaleMenu, units, onToggleUnits, action,
   onList, total, onEstimate, moreItems, onBell, pending }) {
   const i = sheets.findIndex((s) => s.key === current);
   const cur = sheets[i] || null;
   const { num, title: sheetTitle } = splitSheetLabel(cur?.label || "");
   const go = (d) => { const n = sheets[i + d]; if (n) onSheet(n.key); };
-  const money = Number.isFinite(total) ? total.toLocaleString(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "$0.00";
+  const money = Number.isFinite(total) ? total.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "$0.00";
   return (
     <header className="pc-top">
       <div className="pc-top-left">
@@ -64,6 +64,14 @@ export function PremiumTopBar({ title, subtitle, onBack, onGallery, sheets, curr
         </span>
         <button type="button" className="pc-icon" onClick={() => go(1)} disabled={i < 0 || i >= sheets.length - 1} title="Next sheet" aria-label="Next sheet"><Icon name="chevronRight" size={16} /></button>
         <span className="pc-scale">{scaleMenu}</span>
+        {onToggleUnits && (
+          <button type="button" className="pc-icon" onClick={onToggleUnits}
+            title={units === "metric" ? "Metric display (m² / m / mm) — click for imperial" : "Imperial display (SF / LF) — click for metric"}
+            aria-label="Toggle measurement units"
+            style={{ fontFamily: "var(--f-mono)", fontSize: 12, fontWeight: 700, width: "auto", padding: "0 8px", border: "1px solid var(--ink-faint)", borderRadius: 6 }}>
+            {units === "metric" ? "m" : "ft"}
+          </button>
+        )}
         {action}
       </div>
 

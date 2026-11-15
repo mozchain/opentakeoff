@@ -24,7 +24,7 @@ const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 const money = (v) => `$${(Number(v) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const qty = (v) => (Number(v) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 const STATUS_LABEL = { partial: "PARTLY PRICED", unpriced: "UNPRICED" };
-const MARKUPS = [["overhead_pct", "Overhead"], ["profit_pct", "Profit"], ["tax_pct", "Sales tax"]];
+const MARKUPS = [["overhead_pct", "Overhead"], ["profit_pct", "Profit"], ["tax_pct", "GST"]];
 
 // A price box keeps what is typed ("1." mid-entry, an emptied box) and commits
 // the parsed value — null for empty or unusable, which the engine reports as
@@ -259,7 +259,7 @@ export default function EstimatePanel({ projectName, clientInfo = {}, conditions
             <div style={{ width: "min(360px, 100%)" }}>
               {sumRow("Material + assembly items", est.material)}
               {sumRow("Labor", est.labor)}
-              {sumRow(`Sales tax on material (${settings.tax_pct}%)`, est.tax)}
+              {sumRow(`GST on material (${settings.tax_pct}%)`, est.tax)}
               {sumRow(`Overhead (${settings.overhead_pct}%)`, est.overhead)}
               {sumRow(`Profit (${settings.profit_pct}% ${margin ? "margin" : "markup"})`, est.profit)}
               {sumRow(est.complete ? "Base bid" : "Base bid — priced so far", est.total, true)}

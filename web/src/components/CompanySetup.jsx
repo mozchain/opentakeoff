@@ -9,9 +9,9 @@ import { loadEstimatingDefaults, saveEstimatingDefaults, sanitizeEstimatingDefau
 import { useCompanyProfiles, CompanyIdentityFields } from "./CompanyIdentity.jsx";
 
 const NUMBER_FIELDS = [
-  ["overhead_pct", "Overhead", "%", "On material, labor and tax"],
+  ["overhead_pct", "Overhead", "%", "On material, labor and GST"],
   ["profit_pct", "Profit", "%", null],
-  ["tax_pct", "Sales tax", "%", "On material"],
+  ["tax_pct", "GST", "%", "On material"],
   ["valid_days", "Proposal valid", "days", null],
 ];
 const TEXT_AREAS = [
