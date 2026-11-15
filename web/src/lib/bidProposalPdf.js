@@ -7,12 +7,12 @@
 import { winAnsiSafe } from "./markedset.js";
 import { stampWatermark } from "./pdfWatermark.js";
 
-const PAGE = [612, 792];
+const PAGE = [595.28, 841.89];
 const M = 54;                       // margin
 const RIGHT = PAGE[0] - M;
 const BOTTOM = M + 24;              // above the watermark footer
-const money = (v) => `$${(Number(v) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const qty = (v) => (Number(v) || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+const money = (v) => `$${(Number(v) || 0).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const qty = (v) => (Number(v) || 0).toLocaleString("en-AU", { maximumFractionDigits: 2 });
 
 // Greedy word wrap at a width; a single word longer than the line is hard-split.
 // Splits on the text's own line breaks FIRST, then makes each line WinAnsi-safe
@@ -84,7 +84,7 @@ export async function buildBidProposalPdf(model) {
   const top = y;
   if (logoH) y -= logoH + 8;
   if (c.name) { y -= 14; text(c.name, M, 15, bold); y -= 6; }
-  for (const line of [...wrapText(c.address, font, 9.5, 260), [c.phone, c.email].filter(Boolean).join(" · "), c.license ? `License ${c.license}` : ""].filter(Boolean)) {
+  for (const line of [...wrapText(c.address, font, 9.5, 260), [c.phone, c.email].filter(Boolean).join(" · "), c.license ? `ABN / Licence ${c.license}` : ""].filter(Boolean)) {
     y -= 12; text(line, M, 9.5, font, muted);
   }
   const leftBottom = y;
@@ -132,8 +132,17 @@ export async function buildBidProposalPdf(model) {
   if (model.scope_note) { y -= 2; para(model.scope_note, M, RIGHT - M, 9.5, font, muted); }
 
   // ── base bid ──────────────────────────────────────────────────────────────
-  ensure(46);
+  const showGst = (model.tax_pct || 0) > 0;
+  ensure(showGst ? 78 : 46);
   y -= 6;
+  if (showGst) {
+    text("Subtotal (ex. GST)", M + 12, 9.5, font, muted);
+    textRight(money(model.subtotal), RIGHT - 12, 9.5, font, muted);
+    y -= 14;
+    text(`GST (${model.tax_pct}%)`, M + 12, 9.5, font, muted);
+    textRight(money(model.tax), RIGHT - 12, 9.5, font, muted);
+    y -= 16;
+  }
   page.drawRectangle({ x: M, y: y - 30, width: RIGHT - M, height: 38, borderColor: ink, borderWidth: 1 });
   y -= 16;
   text("BASE BID", M + 12, 11, bold);

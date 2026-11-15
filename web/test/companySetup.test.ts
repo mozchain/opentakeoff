@@ -17,9 +17,9 @@ function stubStore() {
 }
 const unstub = () => { delete (globalThis as any).localStorage; };
 
-test("an empty setup is all zeros, markup, 30 days and no text — nothing seeded", () => {
+test("an empty setup is 10% GST, markup, 30 days and no text — nothing seeded", () => {
   assert.deepEqual(sanitizeEstimatingDefaults(undefined), {
-    tax_pct: 0, overhead_pct: 0, profit_pct: 0, profit_mode: "markup",
+    tax_pct: 10, overhead_pct: 0, profit_pct: 0, profit_mode: "markup",
     valid_days: DEFAULT_VALID_DAYS, inclusions: "", exclusions: "", terms: "",
   });
   assert.equal(hasEstimatingDefaults({}), false);
@@ -69,7 +69,7 @@ test("load survives corrupt JSON and a missing localStorage; save reports failur
     store.set("opentakeoff_estimating_defaults", "{not json");
     assert.equal(loadEstimatingDefaults().profit_mode, "markup");
   } finally { unstub(); }
-  assert.equal(loadEstimatingDefaults().tax_pct, 0);
+  assert.equal(loadEstimatingDefaults().tax_pct, 10);
   assert.equal(saveEstimatingDefaults({ tax_pct: 5 }), false);
 });
 

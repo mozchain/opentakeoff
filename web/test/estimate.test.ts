@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 // estimate.js / totals.js are plain JS (allowJs); the tsx loader resolves them from the .ts test.
 import { conditionTotals } from "../src/lib/totals.js";
-import { priceEstimate, sanitizePricing, sanitizeEstimateSettings, defaultPriceUnit, priceValue } from "../src/lib/estimate.js";
+import { priceEstimate, sanitizePricing, sanitizeEstimateSettings, defaultPriceUnit, lineUnits, priceValue } from "../src/lib/estimate.js";
 import { instantiateTemplate, conditionToTemplate } from "../src/lib/canvasUtil.js";
 
 const area = (id: string, sf: number) => ({ condition_id: id, measure_role: "floor_area", computed: { area_sf: sf } });
@@ -83,16 +83,17 @@ test("material rows: whole packages × price; an unpriced row with quantity is m
   assert.deepEqual(l.missing, ["material row: Grout"]);
 });
 
-test("markups: tax on material, overhead on cost, profit as markup", () => {
+test("markups: overhead on cost, profit as markup, GST on ex-GST subtotal", () => {
   const conds = [{ id: "a", finish_tag: "A", pricing: { material: 6, labor: 4 } }];
   const est = price(conds, [area("a", 100)], { tax_pct: 6, overhead_pct: 10, profit_pct: 20 });
   assert.equal(est.material, 600);
   assert.equal(est.labor, 400);
-  assert.equal(est.tax, 36);
-  assert.equal(est.cost, 1036);
-  assert.equal(est.overhead, 103.6);
-  assert.equal(est.profit, 227.92);   // (1036 + 103.6) × 0.20
-  assert.equal(est.total, 1367.52);
+  assert.equal(est.cost, 1000);
+  assert.equal(est.overhead, 100);
+  assert.equal(est.profit, 220);      // (1000 + 100) × 0.20
+  assert.equal(est.subtotal, 1320);
+  assert.equal(est.tax, 79.2);        // 1320 × 0.06
+  assert.equal(est.total, 1399.2);
 });
 
 test("profit as margin: 33.33…% margin is ×1.5", () => {
@@ -128,6 +129,26 @@ test("default unit follows what was measured", () => {
   assert.equal(defaultPriceUnit({ total_sf: 0, lf: 9 }), "LF");
   assert.equal(defaultPriceUnit({ ea: 2 }), "EA");
   assert.equal(defaultPriceUnit({}), "SF");
+  assert.equal(defaultPriceUnit({ total_sf: 5, lf: 9, ea: 1 }, "metric"), "m²");
+  assert.equal(defaultPriceUnit({ total_sf: 0, lf: 9 }, "metric"), "m");
+  assert.equal(defaultPriceUnit({ ea: 2 }, "metric"), "EA");
+  assert.equal(defaultPriceUnit({}, "metric"), "m²");
+  assert.deepEqual(lineUnits({ total_sf: 10, lf: 5, ea: 1 }, undefined, "metric"), ["m²", "m", "EA"]);
+});
+
+test("metric units convert SF/LF to m² and m", () => {
+  const conds = [
+    { id: "lvt", finish_tag: "LVT-1", waste_pct: 10, pricing: { material: 10, labor: 5 } },
+    { id: "base", finish_tag: "RB-1", pricing: { material: 2, labor: 1 } },
+  ];
+  const rows = conditionTotals(conds, [area("lvt", 1000), lin("base", 100)]);
+  const est = priceEstimate({ rows, conditions: conds, units: "metric" });
+  assert.equal(est.lines[0].unit, "m²");
+  assert.equal(est.lines[0].material_qty, 102.19);
+  assert.equal(est.lines[0].labor_qty, 92.9);
+  assert.equal(est.lines[1].unit, "m");
+  assert.equal(est.lines[1].material_qty, 30.48);
+  assert.equal(est.lines[1].labor_qty, 30.48);
 });
 
 test("sanitizers: bad prices and settings are dropped, never coerced to a price", () => {

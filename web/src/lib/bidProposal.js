@@ -66,7 +66,7 @@ export function allocate(total, weights) {
   return parts.map((p) => p / 100);
 }
 
-const fmtDate = (d) => d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+const fmtDate = (d) => d.toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" });
 
 /**
  * @param {{ est: any, conditions: any[], company?: any, clientInfo?: any, projectName?: string,
@@ -93,6 +93,9 @@ export function buildBidProposal({ est, conditions = [], company = {}, clientInf
       qty: l.labor_qty, unit: l.unit, price: sell[i],
       ...(l.status === "optional" && !(sell[i] > 0) ? { included: true } : {}),
     })),
+    subtotal: est.subtotal ?? est.total,
+    tax: est.tax ?? 0,
+    tax_pct: est.settings?.tax_pct ?? 0,
     base_bid: est.total,
     scope_note: p.scope_note.trim(),
     inclusions: textLines(p.inclusions),

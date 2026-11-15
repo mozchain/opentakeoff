@@ -11,7 +11,7 @@ import { Z } from "../lib/ui.js";
 import { inOtherModal, otherModalOpen } from "../lib/modalKeys";
 import { conditionTotals, downloadText } from "../lib/totals.js";
 import { seamLfByShape } from "../lib/rollTakeoff.js";
-import { priceEstimate, priceValue, sanitizePricing, lineLabel, PRICE_UNITS } from "../lib/estimate.js";
+import { priceEstimate, priceValue, sanitizePricing, lineLabel, METRIC_PRICE_UNITS, IMPERIAL_PRICE_UNITS } from "../lib/estimate.js";
 import { estimateWorkbook, estimateFileName } from "../lib/estimateExport.js";
 import { buildXlsx } from "../lib/xlsx.js";
 import { loadEstimatingDefaults } from "../lib/companySetup.js";
@@ -43,7 +43,7 @@ function PriceInput({ value, onCommit, label, name }) {
   );
 }
 
-export default function EstimatePanel({ projectName, clientInfo = {}, conditions, shapes, rollByCond = null, settings, onSettings, onUpdateCondition, onClose, onOpenCompanySetup, companyRev = 0, onClientInfo = null, bidProposal = null, onBidProposal = null }) {
+export default function EstimatePanel({ projectName, clientInfo = {}, conditions, shapes, rollByCond = null, settings, onSettings, onUpdateCondition, onClose, onOpenCompanySetup, companyRev = 0, onClientInfo = null, bidProposal = null, onBidProposal = null, units = "metric" }) {
   const rootRef = useRef(null);
   const [open, setOpen] = useState(() => new Set());   // lines (key) whose assembly items are expanded
   const [msg, setMsg] = useState("");
@@ -69,7 +69,7 @@ export default function EstimatePanel({ projectName, clientInfo = {}, conditions
 
   const seamCtx = useMemo(() => ({ seamByShape: seamLfByShape(rollByCond) }), [rollByCond]);
   const rows = useMemo(() => conditionTotals(conditions, shapes, seamCtx), [conditions, shapes, seamCtx]);
-  const est = useMemo(() => priceEstimate({ rows, conditions, settings }), [rows, conditions, settings]);
+  const est = useMemo(() => priceEstimate({ rows, conditions, settings, units }), [rows, conditions, settings, units]);
   const condById = useMemo(() => new Map(conditions.map((c) => [c.id, c])), [conditions]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const company = useMemo(() => activeProfile(loadProfiles()) || {}, [companyRev]);
@@ -174,11 +174,11 @@ export default function EstimatePanel({ projectName, clientInfo = {}, conditions
                 <th style={th}>Unit</th>
                 <th style={th}>Material qty</th>
                 <th style={th}>Material $/unit</th>
-                <th style={th}>Labor qty</th>
-                <th style={th}>Labor $/unit</th>
+                <th style={th}>Labour qty</th>
+                <th style={th}>Labour $/unit</th>
                 <th style={th}>Material</th>
-                <th style={th}>Labor</th>
-                <th style={th} title="Assembly items: material + their own labor">Assembly</th>
+                <th style={th}>Labour</th>
+                <th style={th} title="Assembly items: material + their own labour">Assembly</th>
                 <th style={th}>Total</th>
               </tr>
             </thead>
@@ -193,7 +193,7 @@ export default function EstimatePanel({ projectName, clientInfo = {}, conditions
                       <td style={{ ...td, ...left, fontFamily: "var(--f-body)" }}>
                         <span style={{ display: "inline-block", width: 10, height: 10, background: c.fill || c.color, border: `1px solid ${c.color}`, marginRight: 8, verticalAlign: "middle" }} />
                         <strong>{l.main ? l.finish_tag : <span style={{ color: "var(--ink-soft)", fontWeight: 400 }}>{l.finish_tag}</span>}</strong>
-                        {!l.main && <span style={{ marginLeft: 6, color: "var(--ink-muted)", fontSize: 11.5 }}>· its {l.unit === "EA" ? "count" : l.unit === "LF" ? "linear" : "area"}</span>}
+                        {!l.main && <span style={{ marginLeft: 6, color: "var(--ink-muted)", fontSize: 11.5 }}>· its {l.unit === "EA" ? "count" : (l.unit === "LF" || l.unit === "m") ? "linear" : "area"}</span>}
                         {l.materials.length > 0 && (
                           <button onClick={() => setOpen((s) => { const n = new Set(s); n.has(l.key) ? n.delete(l.key) : n.add(l.key); return n; })}
                             aria-expanded={expanded} title="Price this condition's assembly items"
@@ -213,7 +213,10 @@ export default function EstimatePanel({ projectName, clientInfo = {}, conditions
                         {l.main ? (
                           <select name="price-unit" aria-label={`${l.finish_tag} pricing unit`} value={l.unit} onChange={(e) => setPricing(c, l, { unit: e.target.value })}
                             className="field-input" style={{ width: "auto", padding: "2px 4px", fontSize: 12 }}>
-                            {PRICE_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                            {((units === "metric" ? METRIC_PRICE_UNITS : IMPERIAL_PRICE_UNITS).includes(l.unit)
+                              ? (units === "metric" ? METRIC_PRICE_UNITS : IMPERIAL_PRICE_UNITS)
+                              : [l.unit, ...(units === "metric" ? METRIC_PRICE_UNITS : IMPERIAL_PRICE_UNITS)]
+                            ).map((u) => <option key={u} value={u}>{u}</option>)}
                           </select>
                         ) : <span title="This line prices the condition's other measured quantity in its own unit">{l.unit}</span>}
                       </td>
@@ -258,11 +261,12 @@ export default function EstimatePanel({ projectName, clientInfo = {}, conditions
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
             <div style={{ width: "min(360px, 100%)" }}>
               {sumRow("Material + assembly items", est.material)}
-              {sumRow("Labor", est.labor)}
-              {sumRow(`GST on material (${settings.tax_pct}%)`, est.tax)}
+              {sumRow("Labour", est.labor)}
               {sumRow(`Overhead (${settings.overhead_pct}%)`, est.overhead)}
               {sumRow(`Profit (${settings.profit_pct}% ${margin ? "margin" : "markup"})`, est.profit)}
-              {sumRow(est.complete ? "Base bid" : "Base bid — priced so far", est.total, true)}
+              {sumRow("Subtotal (ex. GST)", est.subtotal ?? est.total - est.tax)}
+              {sumRow(`GST (${settings.tax_pct}%)`, est.tax)}
+              {sumRow(est.complete ? "Total (inc. GST)" : "Total (inc. GST) — priced so far", est.total, true)}
             </div>
           </div>
         )}

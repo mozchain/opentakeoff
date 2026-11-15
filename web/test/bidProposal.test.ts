@@ -42,8 +42,8 @@ test("model: itemized sell prices add up to the base bid; dates and validity", (
   const m = buildBidProposal({ est, conditions: conds, company: { name: "Sample Co" }, clientInfo: { client_name: "GC" }, projectName: "Clinic", proposal: { itemized: true, valid_days: 45 }, today });
   assert.equal(m.base_bid, est.total);
   assert.equal(Math.round(m.scope.reduce((n: number, s: any) => n + s.price, 0) * 100), Math.round(est.total * 100));
-  assert.equal(m.date, "October 24, 2026");
-  assert.equal(m.valid_until, "December 8, 2026");
+  assert.equal(m.date, "24 October 2026");
+  assert.equal(m.valid_until, "8 December 2026");
   assert.deepEqual(m.scope.map((s: any) => [s.tag, s.unit, s.qty]), [["CPT-1", "SY", 100], ["LVT-1", "SF", 400]]);
   assert.equal(m.scope[0].description, "Broadloom carpet, direct glue");
   assert.equal(m.scope[1].description, "Maker · Plank · Oak");
@@ -71,7 +71,7 @@ test("PDF: letterhead, scope, base bid, terms, acceptance, and the watermark on 
   const { bytes, pages } = await buildBidProposalPdf(m);
   assert.equal(pages, 1);
   const [p1] = await pageTexts(bytes);
-  for (const s of ["Sample Flooring Co", "PROPOSAL", "Example GC", "Clinic", "CPT-1", "LVT-1", "BASE BID", `$${est.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, "Floor prep", "Net 30", "License LIC-000", OT_NAME, OT_WATERMARK]) {
+  for (const s of ["Sample Flooring Co", "PROPOSAL", "Example GC", "Clinic", "CPT-1", "LVT-1", "BASE BID", `$${est.total.toLocaleString("en-AU", { minimumFractionDigits: 2 })}`, "Floor prep", "Net 30", "ABN / Licence LIC-000", OT_NAME, OT_WATERMARK]) {
     assert.ok(p1.includes(hex(s)), `page 1 shows ${s}`);
   }
   assert.ok(p1.includes(hex("100 Example Ave")) && p1.includes(hex("Anytown, ST")) && !p1.includes(hex("Ave?Anytown")), "address keeps its line break");

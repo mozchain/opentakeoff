@@ -17,6 +17,7 @@ const KEY = "opentakeoff_estimating_defaults";
 export const TEXT_FIELDS = ["inclusions", "exclusions", "terms"];
 export const TEXT_LIMIT = 8000;   // per field; a proposal page, not a contract archive
 export const DEFAULT_VALID_DAYS = 30;
+export const DEFAULT_TAX_PCT = 10;
 
 /**
  * @param {any} raw
@@ -27,7 +28,7 @@ export function sanitizeEstimatingDefaults(raw) {
   const src = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const days = Number(src.valid_days);
   const out = {
-    ...sanitizeEstimateSettings(src),
+    ...sanitizeEstimateSettings(src.tax_pct === undefined ? { ...src, tax_pct: DEFAULT_TAX_PCT } : src),
     valid_days: Number.isInteger(days) && days > 0 && days <= 365 ? days : DEFAULT_VALID_DAYS,
   };
   for (const k of TEXT_FIELDS) out[k] = typeof src[k] === "string" ? src[k].slice(0, TEXT_LIMIT) : "";
@@ -56,6 +57,6 @@ export function saveEstimatingDefaults(d) {
 // any non-default number or any proposal text.
 export function hasEstimatingDefaults(d) {
   const s = sanitizeEstimatingDefaults(d);
-  return s.tax_pct > 0 || s.overhead_pct > 0 || s.profit_pct > 0 || s.profit_mode !== "markup"
+  return s.tax_pct !== DEFAULT_TAX_PCT || s.overhead_pct > 0 || s.profit_pct > 0 || s.profit_mode !== "markup"
     || s.valid_days !== DEFAULT_VALID_DAYS || TEXT_FIELDS.some((k) => s[k].trim());
 }

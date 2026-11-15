@@ -55,10 +55,11 @@ export function estimateWorkbook({ est, projectName = "", companyName = "", clie
     [],
     ["Material", est.material],
     ["Labor", est.labor],
-    [`GST on material (${st.tax_pct}%)`, est.tax],
     ["Cost", est.cost],
     [`Overhead (${st.overhead_pct}%)`, est.overhead],
     [`Profit (${st.profit_pct}% ${MODE[st.profit_mode]})`, est.profit],
+    ["Subtotal (ex. GST)", est.subtotal ?? (est.total - est.tax)],
+    [`GST (${st.tax_pct}%)`, est.tax],
     [est.complete ? "Base bid" : "Base bid (priced so far)", est.total],
   ];
   if (!est.complete) summary.push([], [`Not fully priced: ${est.unpriced.length} line${est.unpriced.length === 1 ? "" : "s"} count at $0 for what is missing (see the Unpriced tab).`]);

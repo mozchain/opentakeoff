@@ -9884,8 +9884,8 @@ export default function TakeoffCanvas() {
   // the project's markups (or the Company setup defaults until the estimate opens)
   const estTotal = useMemo(() => {
     if (!workspaceLayout) return 0;
-    try { return priceEstimate({ rows: projRows, conditions, settings: estimateSettings || loadEstimatingDefaults() }).total; } catch { return 0; }
-  }, [workspaceLayout, projRows, conditions, estimateSettings]);
+    try { return priceEstimate({ rows: projRows, conditions, settings: estimateSettings || loadEstimatingDefaults(), units }).total; } catch { return 0; }
+  }, [workspaceLayout, projRows, conditions, estimateSettings, units]);
   // {{qty}} in a note (#474) — the linked condition's measured quantity,
   // whole project, in the display unit system. Resolved at draw time only.
   const noteQtyLabels = useMemo(() => qtyLabels(projRows, units), [projRows, units]);
@@ -13129,6 +13129,7 @@ export default function TakeoffCanvas() {
           onClientInfo={setClientInfo}
           bidProposal={bidProposal} onBidProposal={(next) => setBidProposal(sanitizeBidProposal(next))}
           onOpenCompanySetup={() => setCompanySetupOpen(true)} companyRev={companyRev}
+          units={units}
           onClose={() => setShowEstimate(false)}
         />
       )}

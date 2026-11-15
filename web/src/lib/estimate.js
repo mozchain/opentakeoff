@@ -61,8 +61,11 @@
 
 import { round2 } from "./num.js";
 import { isMaterialLine, itemRule } from "./totals.js";
+import { M_PER_FT, M2_PER_SF } from "./units";
 
-export const PRICE_UNITS = ["SF", "SY", "LF", "EA"];
+export const PRICE_UNITS = ["SF", "SY", "LF", "EA", "m²", "m"];
+export const METRIC_PRICE_UNITS = ["m²", "m", "EA"];
+export const IMPERIAL_PRICE_UNITS = ["SF", "SY", "LF", "EA"];
 export const PROFIT_MODES = ["markup", "margin"];
 export const DEFAULT_ESTIMATE_SETTINGS = Object.freeze({ tax_pct: 0, overhead_pct: 0, profit_pct: 0, profit_mode: "markup" });
 
@@ -129,27 +132,34 @@ export function sanitizeEstimateSettings(s) {
 // The unit a condition's MAIN line prices in when the estimator hasn't picked
 // one: what it was measured in. Area beats length beats count — a bordered
 // linear condition carries both LF and SF and is bought by the SF.
-export function defaultPriceUnit(row) {
-  if ((row?.total_sf || 0) > 0) return "SF";
-  if ((row?.lf || 0) > 0) return "LF";
+export function defaultPriceUnit(row, units = "imperial") {
+  const m = units === "metric";
+  if ((row?.total_sf || 0) > 0) return m ? "m²" : "SF";
+  if ((row?.lf || 0) > 0) return m ? "m" : "LF";
   if ((row?.ea || 0) > 0) return "EA";
-  return "SF";
+  return m ? "m²" : "SF";
 }
 
-const KIND = { SF: "area", SY: "area", LF: "length", EA: "count" };
+const KIND = { SF: "area", SY: "area", "m²": "area", LF: "length", m: "length", EA: "count" };
 
 /**
  * The units of a condition's estimate lines, main line first: the main unit,
- * then every OTHER quantity kind the row actually carries (area in SF, then LF,
- * then EA). A row that measured nothing still prices its main line.
+ * then every OTHER quantity kind the row actually carries (area in SF or m²,
+ * then LF or m, then EA). A row that measured nothing still prices its main line.
  * @param {any} row a conditionTotals row
  * @param {string} [mainUnit] the condition's pricing.unit, if picked
+ * @param {string} [units] "imperial" | "metric"
  * @returns {string[]}
  */
-export function lineUnits(row, mainUnit) {
-  const main = PRICE_UNITS.includes(mainUnit) ? mainUnit : defaultPriceUnit(row);
+export function lineUnits(row, mainUnit, units = "imperial") {
+  const main = PRICE_UNITS.includes(mainUnit) ? mainUnit : defaultPriceUnit(row, units);
   const out = [main];
-  const present = [["area", "SF", (row?.total_sf || 0) > 0], ["length", "LF", (row?.lf || 0) > 0], ["count", "EA", (row?.ea || 0) > 0]];
+  const m = units === "metric";
+  const present = [
+    ["area", m ? "m²" : "SF", (row?.total_sf || 0) > 0],
+    ["length", m ? "m" : "LF", (row?.lf || 0) > 0],
+    ["count", "EA", (row?.ea || 0) > 0],
+  ];
   for (const [kind, unit, has] of present) if (has && kind !== KIND[main]) out.push(unit);
   return out;
 }
@@ -164,7 +174,7 @@ export function lineUnits(row, mainUnit) {
  */
 export function isOptionalLine(row, unit, main) {
   if (main || !((row?.border_sf || 0) > 0)) return false;
-  if (unit === "LF") return true;
+  if (unit === "LF" || unit === "m") return true;
   if (KIND[unit] === "area") return !((row.floor_sf || 0) > 0) && !((row.wall_sf || 0) > 0);
   return false;
 }
@@ -179,7 +189,9 @@ export function isOptionalLine(row, unit, main) {
 export function priceQuantities(row, unit) {
   switch (unit) {
     case "SY": return { material: row.sy_net || 0, labor: round2((row.total_sf || 0) / 9) };
+    case "m²": return { material: round2((row.total_sf_net || 0) * M2_PER_SF), labor: round2((row.total_sf || 0) * M2_PER_SF) };
     case "LF": return { material: row.lf_net || 0, labor: row.lf || 0 };
+    case "m": return { material: round2((row.lf_net || 0) * M_PER_FT), labor: round2((row.lf || 0) * M_PER_FT) };
     case "EA": return { material: row.ea || 0, labor: row.ea || 0 };
     default: return { material: row.total_sf_net || 0, labor: row.total_sf || 0 };
   }
@@ -187,12 +199,12 @@ export function priceQuantities(row, unit) {
 
 /**
  * Price a takeoff.
- * @param {{rows: any[], conditions: any[], settings?: any}} args
+ * @param {{rows: any[], conditions: any[], settings?: any, units?: string}} args
  *   rows — conditionTotals(conditions, shapes, ctx) output; conditions — the
  *   same conditions (their pricing and material prices are read by id).
  *   Conditions with no shapes are left out: nothing measured, nothing to price.
  */
-export function priceEstimate({ rows = [], conditions = [], settings = null }) {
+export function priceEstimate({ rows = [], conditions = [], settings = null, units: unitSystem = "imperial" }) {
   const st = sanitizeEstimateSettings(settings);
   const byId = new Map(conditions.map((c) => [c.id, c]));
   const lines = [];
@@ -200,7 +212,7 @@ export function priceEstimate({ rows = [], conditions = [], settings = null }) {
     if (!row || !(row.shape_count > 0)) continue;
     const c = byId.get(row.id) || {};
     const pricing = sanitizePricing(c.pricing) || {};
-    const units = lineUnits(row, pricing.unit);
+    const units = lineUnits(row, pricing.unit, unitSystem);
     // conditionTotals keeps exactly the rows isMaterialLine passes, in order —
     // the same predicate here lines each priced source row up with its quantity.
     const srcMaterials = (c.materials || []).filter(isMaterialLine);
@@ -250,8 +262,7 @@ export function priceEstimate({ rows = [], conditions = [], settings = null }) {
 
   const material = round2(lines.reduce((n, l) => n + l.material_cost + l.materials_cost, 0));
   const labor = round2(lines.reduce((n, l) => n + l.labor_cost + l.materials_labor_cost, 0));
-  const tax = round2(material * st.tax_pct / 100);
-  const cost = round2(material + labor + tax);
+  const cost = round2(material + labor);
   const overhead = round2(cost * st.overhead_pct / 100);
   const base = round2(cost + overhead);
   const warnings = [];
@@ -266,11 +277,14 @@ export function priceEstimate({ rows = [], conditions = [], settings = null }) {
   } else {
     profit = round2(base * st.profit_pct / 100);
   }
+  const subtotal = round2(base + profit);
+  const tax = round2(subtotal * st.tax_pct / 100);
   const unpriced = lines.filter((l) => l.missing.length > 0).map((l) => ({ id: l.id, key: l.key, finish_tag: l.finish_tag, unit: l.unit, status: l.status, missing: l.missing }));
   return {
     settings: st, lines,
     material, labor, tax, cost, overhead, profit,
-    total: round2(base + profit),
+    subtotal,
+    total: round2(subtotal + tax),
     unpriced, complete: unpriced.length === 0, warnings,
   };
 }
