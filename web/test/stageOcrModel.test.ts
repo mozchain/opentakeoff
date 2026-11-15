@@ -138,8 +138,12 @@ test("a download that hangs times out, so the deploy goes on without OCR, and no
   const dest = tempDest();
   const fetchImpl = ((url: string, init?: { signal?: AbortSignal }) =>
     new Promise((_, reject) => {
+      const keepAlive = setTimeout(() => {}, 10_000);
       // like real fetch: settles only when its signal aborts
-      init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+      init?.signal?.addEventListener("abort", () => {
+        clearTimeout(keepAlive);
+        reject(init.signal!.reason);
+      });
     })) as unknown as typeof fetch;
   const started = Date.now();
   await assert.rejects(stage({ dest, fetchImpl, files: FILES, env: {}, log: quiet, timeoutMs: 50 }), /time|abort/i);

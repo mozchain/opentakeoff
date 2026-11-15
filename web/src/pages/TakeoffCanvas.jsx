@@ -245,7 +245,7 @@ import { findCutoutParent, subtractCutout, recomposeCutouts, cutRunsAcross } fro
 import { normalizeAgentReview } from "../lib/reviewState.js";
 import { oneClickEnabled, ONE_CLICK_GATE_MESSAGE, commandBoxEnabled, ocrEnabled } from "../lib/gate.js";
 import { computeShapeMetrics, needsMetrics, recalibrateShapes, linearVerticalFt } from "../lib/shapeMetrics.js";
-import { fmtCheckLen, parseLenInput, checkVerdict, M_PER_FT, areaVal, areaUnit, lenVal, lenUnit, calInputToFeet, heightVal, heightUnit, heightInputToFeet, heightStep, dimInputStr, dimLabel, volVal, volUnit } from "../lib/units";
+import { fmtCheckLen, parseLenInput, checkVerdict, M_PER_FT, areaVal, areaUnit, lenVal, lenUnit, heightVal, heightUnit, heightInputToFeet, heightStep, dimInputStr, dimLabel, volVal, volUnit } from "../lib/units";
 import * as panelGeom from "../lib/panelGeometry.js";
 
 // Carpet roll width — a run reaching this needs a seam. The live cursor readout
@@ -678,7 +678,7 @@ export default function TakeoffCanvas() {
   // ONLY: all stored takeoff math stays feet (lib/units contract), so toggling
   // never rewrites a shape, a scale, or a coverage rate. Browser default via
   // localStorage; a project that saved a units field overrides on hydrate.
-  const [units, setUnits] = useState(() => { try { return localStorage.getItem("opentakeoff_units") === "metric" ? "metric" : "imperial"; } catch { return "imperial"; } });
+  const [units, setUnits] = useState(() => { try { return localStorage.getItem("opentakeoff_units") === "imperial" ? "imperial" : "metric"; } catch { return "metric"; } });
   useEffect(() => { try { localStorage.setItem("opentakeoff_units", units); } catch { /* private mode */ } }, [units]);
   const [check, setCheck] = useState([]);             // Check tool: 0–2 stage-px points along a printed dimension
   const [checkStated, setCheckStated] = useState(""); // what the drawing says that dimension is
@@ -6093,7 +6093,7 @@ export default function TakeoffCanvas() {
   }
 
   function applyCalibration() {
-    const feet = calInputToFeet(parseFloat(pendingLen), units);   // metric users type meters; stored scale stays feet
+    const feet = parseLenInput(pendingLen, units);   // metric users type meters, cm, or mm; stored scale stays feet
     if (!(feet > 0) || calib.length !== 2) return;
     const pa = panelAt(calib[0][0]), pb = panelAt(calib[1][0]);
     if (pa.key !== pb.key) {
@@ -12313,7 +12313,7 @@ export default function TakeoffCanvas() {
         <div style={{ padding: "8px 14px", background: "var(--paper-bright)", borderBottom: "1px solid var(--hairline-warm)", fontSize: 14 }}>
           {calib.length < 2 ? <span>Custom scale: click two points along a known dimension ({calib.length}/2). Tip: use the longest dimension. (Or just pick a standard scale above.)</span> : (
             <span>Real length:{" "}
-              <input name="calibration-length" type="number" value={pendingLen} onChange={(e) => setPendingLen(e.target.value)} onKeyDown={(e) => e.key === "Enter" && applyCalibration()} placeholder={units === "metric" ? "meters" : "feet"} autoFocus style={{ width: 90, padding: 5, borderRadius: 0, border: "1px solid var(--ink-faint)" }} /> {units === "metric" ? "m" : "ft"}
+              <input name="calibration-length" value={pendingLen} onChange={(e) => setPendingLen(e.target.value)} onKeyDown={(e) => e.key === "Enter" && applyCalibration()} placeholder={units === "metric" ? "meters (3.6m, 3600mm ok)" : "feet"} autoFocus style={{ width: 145, padding: 5, borderRadius: 0, border: "1px solid var(--ink-faint)" }} /> {units === "metric" ? "m" : "ft"}
               <button onClick={applyCalibration} style={{ marginLeft: 8, padding: "5px 12px", borderRadius: 0, border: "none", background: "var(--ink)", color: "var(--paper-bright)", cursor: "pointer" }}>Apply</button>
               <button onClick={() => setCalib([])} style={{ marginLeft: 6, padding: "5px 10px", borderRadius: 0, border: "1px solid var(--ink-faint)", background: "transparent", cursor: "pointer" }}>Reset</button>
             </span>
@@ -12336,7 +12336,7 @@ export default function TakeoffCanvas() {
           ) : (
             <span>
               measures <b style={{ fontFamily: "var(--f-mono)" }}>{fmtCheckLen(checkFeet, units)}</b> at {stdValue || "custom scale"} · drawing says{" "}
-              <input name="check-stated-length" value={checkStated} onChange={(e) => setCheckStated(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} placeholder={units === "metric" ? "meters" : `feet (12'6, 6" ok)`} autoFocus style={{ width: 100, padding: 5, borderRadius: 0, border: "1px solid var(--ink-faint)" }} /> {units === "metric" ? "m" : "ft"}
+              <input name="check-stated-length" value={checkStated} onChange={(e) => setCheckStated(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }} placeholder={units === "metric" ? "meters (3.6m, 3600mm ok)" : `feet (12'6, 6" ok)`} autoFocus style={{ width: 145, padding: 5, borderRadius: 0, border: "1px solid var(--ink-faint)" }} /> {units === "metric" ? "m" : "ft"}
               {checkErrPct != null && (() => {
                 // checkVerdict grades the ROUNDED value the chip displays (and
                 // normalizes -0), so color and number can never contradict —

@@ -96,6 +96,11 @@ test("parseLenInput reads decimal feet, feet-inches forms, and meters", () => {
   assert.equal(parseLenInput("0'6", "imperial"), 0.5);
   assert.ok(Math.abs(parseLenInput("3.81", "metric") - 3.81 / M_PER_FT) < 1e-9);
   assert.ok(Math.abs(parseLenInput("3.81 m", "metric") - 3.81 / M_PER_FT) < 1e-9);
+  assert.ok(Math.abs(parseLenInput("3810mm", "metric") - 3.81 / M_PER_FT) < 1e-9);
+  assert.ok(Math.abs(parseLenInput("3810 mm", "metric") - 3.81 / M_PER_FT) < 1e-9);
+  assert.ok(Math.abs(parseLenInput("381cm", "metric") - 3.81 / M_PER_FT) < 1e-9);
+  assert.ok(Math.abs(parseLenInput("381 cm", "metric") - 3.81 / M_PER_FT) < 1e-9);
+  assert.ok(Number.isNaN(parseLenInput("-3810mm", "metric")));
   assert.ok(Number.isNaN(parseLenInput("", "imperial")));
   assert.ok(Number.isNaN(parseLenInput("banana", "imperial")));
   assert.ok(Number.isNaN(parseLenInput("12'14", "imperial")));  // 14 inches is not a dimension

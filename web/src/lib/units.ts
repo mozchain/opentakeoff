@@ -215,9 +215,10 @@ export function dimLabel(feet: number, units: UnitSystem = "imperial"): string {
 /** Parse a typed dimension into internal feet. Imperial accepts decimal feet
  *  ("12.5"), feet-inches forms ("12'6", "12' 6\"", "12-6", "12-6\""), and inches-only
  *  ("6\"", "6in" — the natural way to type a sub-foot check dimension); metric
- *  users type meters. Bare numbers must be plain unsigned decimals: scientific
- *  notation ("1e3") and negatives parse as NaN — every consumer guards > 0,
- *  but a dimension parser should never produce them in the first place.
+ *  users type meters, or use explicit cm / mm suffixes ("240cm", "3600mm").
+ *  Bare numbers must be plain unsigned decimals: scientific notation ("1e3")
+ *  and negatives parse as NaN — every consumer guards > 0, but a dimension
+ *  parser should never produce them in the first place.
  *  Returns NaN when it can't read the input. */
 export function parseLenInput(raw: string, units: UnitSystem): number {
   const s = (raw || "").trim();
@@ -225,6 +226,14 @@ export function parseLenInput(raw: string, units: UnitSystem): number {
   // a typed dimension number is a plain unsigned decimal — no sign, no exponent
   const plainNum = (t: string): number => (/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(t) ? Number(t) : NaN);
   if (units === "metric") {
+    if (/mm$/i.test(s)) {
+      const mm = plainNum(s.replace(/mm$/i, "").trim());
+      return Number.isFinite(mm) ? (mm / 1000) / M_PER_FT : NaN;
+    }
+    if (/cm$/i.test(s)) {
+      const cm = plainNum(s.replace(/cm$/i, "").trim());
+      return Number.isFinite(cm) ? (cm / 100) / M_PER_FT : NaN;
+    }
     const m = plainNum(s.replace(/m$/i, "").trim());
     return Number.isFinite(m) ? m / M_PER_FT : NaN;
   }

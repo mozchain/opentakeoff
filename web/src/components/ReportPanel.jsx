@@ -49,7 +49,7 @@ const sheetNum = (v, d = 1) => {
   return num(r, d);
 };
 
-export default function ReportPanel({ projectName, onProjectName, conditions, shapes, sheetLabel, sheetDims, onMarkedSet, markedSetDark, onClose, markups = [], rfis = [], scaleInfo = [], provenanceCounters = null, clientInfo = {}, onClientInfo, conditionColumns = [], shapeLabels = [], units = "imperial", rollByCond = null, conditionEditProposals = [], onOpenCompanySetup = null, companyRev = 0, onEstimate = null }) {
+export default function ReportPanel({ projectName, onProjectName, conditions, shapes, sheetLabel, sheetDims, onMarkedSet, markedSetDark, onClose, markups = [], rfis = [], scaleInfo = [], provenanceCounters = null, clientInfo = {}, onClientInfo, conditionColumns = [], shapeLabels = [], units = "metric", rollByCond = null, conditionEditProposals = [], onOpenCompanySetup = null, companyRev = 0, onEstimate = null }) {
   // proposals (#365): a pending condition-edit diff prints BESIDE the current
   // values — the row's numbers are always the current knobs; the chip says
   // what the agent proposed, and the JSON export carries the same rows.
