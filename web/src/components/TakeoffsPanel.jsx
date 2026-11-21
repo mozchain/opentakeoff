@@ -916,6 +916,7 @@ function AssemblyBar({ cond, assemblies, onApply }) {
 
 function TakeoffsPanel({
   open, width, overlay = false, multiSheet, dockSide, layoutLocked = false, dockHandle, units = "metric",
+  onReport = null,
   conditions, activeCond, visRowById, projRowById = new Map(), conditionColumns, shapeLabels = [], templates, palette = [], rollByCond = null,
   transitionSources = [],
   matLib, matLibById, linkedCountById,
@@ -1336,6 +1337,11 @@ function TakeoffsPanel({
             ))}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            {onReport && (
+              <button onClick={onReport}
+                title="Open the takeoff report — per-condition breakdown with waste, plus CSV / Excel export."
+                style={{ background: "var(--paper-cream)", border: "1px solid var(--paper-cream)", color: "var(--ink)", fontSize: 9.5, fontFamily: "var(--f-mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", padding: "2px 6px", lineHeight: 1.4, fontWeight: 700 }}>report</button>
+            )}
             <button onClick={() => onPanelPrefs((p) => ({ ...p, strip: !p.strip }))}
               title="Compact strip — also show the conditions as a horizontal strip above the canvas (handy on small projects with the panel collapsed)"
               style={{ background: panelPrefs.strip ? "var(--paper-cream)" : "none", border: "1px solid var(--paper-cream)", color: panelPrefs.strip ? "var(--ink)" : "var(--paper-cream)", fontSize: 9.5, fontFamily: "var(--f-mono)", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", padding: "2px 6px", lineHeight: 1.4 }}>strip</button>

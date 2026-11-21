@@ -11846,6 +11846,7 @@ export default function TakeoffCanvas() {
             takeoffs toggle mirrors the DOCKED panel's collapsed pref — the rail
             rides the canvas edge, so it stays visible either way. */}
       <div data-panel-rail style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", display: workspaceLayout && !focusMode ? "none" : "flex", flexDirection: "column", gap: 6, zIndex: 8 }}>
+        {panelBtn(() => setShowReport(true), "list", "Quantities report — per-condition breakdown with waste, plus CSV / Excel export", showReport)}
         {panelBtn(() => setLeftTab((t) => (t === "markup" ? null : "markup")), "document", "Markup list — existing clouds, callouts, and notes", leftTab === "markup", markupCount)}
         {panelBtn(() => setLeftTab((t) => (t === "stamp" ? null : "stamp")), "stamp", "Stamps — reusable annotations dropped click-to-place", leftTab === "stamp", stampLib.stamps.length)}
         {panelBtn(() => setLeftTab((t) => (t === "rfi" ? null : "rfi")), "rfi", "RFI register — raise, track, and export Requests For Information", leftTab === "rfi", rfis.length)}
@@ -13000,6 +13001,7 @@ export default function TakeoffCanvas() {
             onTradeAll={() => pickViewTrade(ALL_TRADES)}
             rowById={projRowById} units={units} conditionColumns={conditionColumns} rollByCond={rollByCond}
             matLib={matLib} matLibById={matLibById}
+            onReport={() => setShowReport(true)}
             onActivate={panelHandlers.onActivate} onAddCondition={panelHandlers.onAddCondition} onDeleteCondition={panelHandlers.onDeleteCondition}
             onDuplicateCondition={panelHandlers.onDuplicateCondition} onUpdateCond={panelHandlers.onUpdateCond} onSetCondParam={panelHandlers.onSetCondParam} onAssignAttr={panelHandlers.onAssignAttr}
             onToggleHidden={panelHandlers.onToggleHidden} onTogglePin={panelHandlers.onTogglePin} onApplyAssembly={panelHandlers.onApplyAssembly}
@@ -13012,6 +13014,7 @@ export default function TakeoffCanvas() {
         <TakeoffsPanel
           dockSide={workspaceLayout ? workspaceArrangement.takeoffs : undefined} layoutLocked={workspaceLayout && workspaceArrangement.locked} dockHandle={workspaceDockHandle("takeoffs", "Takeoffs")}
           open={workspaceLayout ? fullTableOpen : takeoffsOpen}
+          onReport={() => setShowReport(true)}
           width={panelW}
           overlay={isNarrow}
           multiSheet={groupKeys.length > 1}

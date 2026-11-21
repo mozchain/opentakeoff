@@ -39,7 +39,7 @@ function Swatches({ value, onPick, dim = false, none = false, label }) {
 function ConditionsDock({
   open, onClose, sheetLabel, conditions, activeCond, hiddenConds, tradeHidden, palette,
   viewTrade, allTrades, tradeLabel, onTradeThis, onTradeAll, rowById, units, conditionColumns, rollByCond,
-  matLib, matLibById,
+  matLib, matLibById, onReport,
   onActivate, onAddCondition, onDeleteCondition, onDuplicateCondition, onUpdateCond, onSetCondParam, onAssignAttr,
   onToggleHidden, onTogglePin, onApplyAssembly,
   onAddMaterial, onUpdateMaterial, onRemoveMaterial, matFieldOverridden, onRevertMatField, onAttachLibMaterial, onPromoteMaterial,
@@ -69,7 +69,11 @@ function ConditionsDock({
     <aside className="cd-dock" aria-label="Conditions" data-conditions-dock="">
       <header className="cd-head">
         <strong>Conditions</strong>{sheetLabel && <span className="cd-head-sheet"> · {sheetLabel}</span>}
-        <button type="button" className="cd-icon-btn cd-head-close" onClick={onClose} title="Hide conditions" aria-label="Hide conditions"><Icon name="chevronRight" size={16} /></button>
+        {onReport && (
+          <button type="button" className="cd-btn" onClick={onReport} title="Quantities report — per-condition breakdown with waste, plus CSV / Excel export"
+            style={{ marginLeft: "auto", marginRight: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, fontFamily: "var(--f-mono)", textTransform: "uppercase" }}>Report</button>
+        )}
+        <button type="button" className={`cd-icon-btn cd-head-close${onReport ? "" : " is-auto-margin"}`} onClick={onClose} title="Hide conditions" aria-label="Hide conditions" style={onReport ? { marginLeft: 0 } : undefined}><Icon name="chevronRight" size={16} /></button>
       </header>
       <div className="cd-seg" role="tablist" aria-label="Trade view">
         <button type="button" role="tab" aria-selected={viewTrade !== allTrades} onClick={onTradeThis} title="Show only this trade's conditions">{tradeLabel}</button>
