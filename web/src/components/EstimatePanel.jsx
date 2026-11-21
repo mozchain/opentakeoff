@@ -67,7 +67,7 @@ export default function EstimatePanel({ projectName, clientInfo = {}, conditions
     return () => window.removeEventListener("keydown", onKey, true);
   }, [onClose]);
 
-  const seamCtx = useMemo(() => ({ seamByShape: seamLfByShape(rollByCond) }), [rollByCond]);
+  const seamCtx = useMemo(() => ({ seamByShape: seamLfByShape(rollByCond), units }), [rollByCond, units]);
   const rows = useMemo(() => conditionTotals(conditions, shapes, seamCtx), [conditions, shapes, seamCtx]);
   const est = useMemo(() => priceEstimate({ rows, conditions, settings, units }), [rows, conditions, settings, units]);
   const condById = useMemo(() => new Map(conditions.map((c) => [c.id, c])), [conditions]);

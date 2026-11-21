@@ -42,6 +42,34 @@ export const MATERIAL_PRESETS = {
     { label: "12 ft stick",             per: 12 },
   ],
 };
+
+export const METRIC_MATERIAL_PRESETS = {
+  adhesive: [                              // m² per Litre
+    { label: 'PSA roller / tackifier (carpet tile/LVT)', per: 7.5, unit: "L" },
+    { label: '1.6 mm U-notch (PSA)',                     per: 5.0, unit: "L" },
+    { label: '1.6 mm V-notch (vinyl)',                   per: 3.7, unit: "L" },
+    { label: '3 mm sq-notch (rubber/cork)',              per: 2.5, unit: "L" },
+    { label: '5 mm V-notch (timber)',                    per: 1.5, unit: "L" },
+    { label: '6 mm V-notch (wood/hybrid)',               per: 1.2, unit: "L" },
+    { label: '12 mm V-notch (timber, coarse)',           per: 1.0, unit: "L" },
+  ],
+  mortar: [                                // m² per 20 kg bag
+    { label: '6 mm sq-notch (wall tile)',                per: 6.0, unit: "bag" },
+    { label: '6×10 mm notch (floor tile)',               per: 4.5, unit: "bag" },
+    { label: '12 mm sq-notch (large tile)',              per: 3.0, unit: "bag" },
+    { label: '15 mm U-notch (large format)',             per: 2.2, unit: "bag" },
+  ],
+  trim: [                                  // m per stick
+    { label: "2.5 m stick",                              per: 2.5, unit: "stick" },
+    { label: "3 m stick",                                per: 3.0, unit: "stick" },
+    { label: "1.5 m stick",                              per: 1.5, unit: "stick" },
+  ],
+};
+
+export function getMaterialPresets(kind, units = "metric") {
+  const table = units === "metric" ? METRIC_MATERIAL_PRESETS : MATERIAL_PRESETS;
+  return table[kind] || [];
+}
 export const GROUT_DENSITY = 8.33;         // industry-standard grout density factor
 export const GROUT_DEFAULTS = { tileL: 12, tileW: 24, tileT: 0.375, joint: 0.125, bagLbs: 25 };
 export const GROUT_PARAM_KEYS = ["tileL", "tileW", "tileT", "joint", "bagLbs"];

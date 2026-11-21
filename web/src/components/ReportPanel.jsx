@@ -88,7 +88,7 @@ export default function ReportPanel({ projectName, onProjectName, conditions, sh
   // views below slice it for free instead of repeating the whole condition's
   // welding on every sheet. Empty map for a project with no roll goods, which
   // makes every seam_lf row read 0 — the honest answer before a layout exists.
-  const seamCtx = useMemo(() => ({ seamByShape: seamLfByShape(rollByCond) }), [rollByCond]);
+  const seamCtx = useMemo(() => ({ seamByShape: seamLfByShape(rollByCond), units }), [rollByCond, units]);
   const rows = useMemo(() => conditionTotals(conditions, shapes, seamCtx).filter((r) => r.shape_count > 0), [conditions, shapes, seamCtx]);
   const noteQty = useMemo(() => qtyLabels(rows, units), [rows, units]);   // {{qty}} in the annotations table (#474)
   const bySheet = useMemo(() => sheetTotals(conditions, shapes), [conditions, shapes]);

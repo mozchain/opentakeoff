@@ -34,7 +34,7 @@ import { areaVal, areaUnit, lenVal, lenUnit, heightUnit, heightInputToFeet, heig
 import { HATCHES, PALETTE, NO_FILL, HatchSwatch } from "./hatches.jsx";
 import { LINE_STYLES, LINE_STYLE_IDS } from "../lib/lineStyles.js";
 import { baseTagOf, localCount } from "../lib/variants.ts";
-import { materialKind, MATERIAL_PRESETS, GROUT_DEFAULTS, groutDerivedFields, showsGroutCalc, showsGroutDeriveAffordance, isLinearGrout, baseGroutParams, baseCourses, groutRateStale, inFrac } from "../lib/coverage.js";
+import { materialKind, MATERIAL_PRESETS, getMaterialPresets, GROUT_DEFAULTS, groutDerivedFields, showsGroutCalc, showsGroutDeriveAffordance, isLinearGrout, baseGroutParams, baseCourses, groutRateStale, inFrac } from "../lib/coverage.js";
 import { draftCommitValue, blurCommitValue, blurCommitNonNegative } from "../lib/draftInput.js";
 import { itemRule, itemWastePct, coverageLabel } from "../lib/totals.js";
 import { loadAssemblies, saveAssemblies, conditionToAssembly, ASSEMBLY_EVENT, ASSEMBLY_STORAGE_KEY } from "../lib/assemblies.js";
@@ -174,15 +174,22 @@ function LibDraftInput({ name, value, number, placeholder, width, onCommitText }
 // Materials tab so a library "Adhesive" and an attached line offer the same
 // notch/roller list. Renders nothing when the kind has no preset table.
 function CoveragePresetSelect({ material: m, onPick, units = "metric" }) {
-  const presets = (m.basis || "area") === "area" ? MATERIAL_PRESETS[materialKind(m)] : undefined;
-  if (!presets) return null;
+  const presets = (m.basis || "area") === "area" ? getMaterialPresets(materialKind(m), units) : undefined;
+  if (!presets || !presets.length) return null;
   return (
     <select name="coverage-preset" value={presets.some((t) => t.label === m.note) ? m.note : ""}
-      onChange={(e) => { const t = presets.find((x) => x.label === e.target.value); if (t) onPick({ note: t.label, per: t.per }); }}
+      onChange={(e) => {
+        const t = presets.find((x) => x.label === e.target.value);
+        if (t) onPick({ note: t.label, per: t.per, ...(t.unit && (!m.unit || m.unit === "gal") ? { unit: t.unit } : {}) });
+      }}
       title="Coverage preset — trowel notch / spread rate. Generic industry-typical values; verify against the product data sheet."
       style={{ ...ip, background: "var(--paper-bright)" }}>
       <option value="">preset…</option>
-      {presets.map((t) => <option key={t.label} value={t.label}>{t.label} · {units === "metric" ? Math.round(areaVal(t.per, "metric") * 10) / 10 : t.per} {areaUnit(units)}/{m.unit || "unit"}</option>)}
+      {presets.map((t) => (
+        <option key={t.label} value={t.label}>
+          {t.label} · {t.per} {areaUnit(units)}/{t.unit || m.unit || (units === "metric" ? "L" : "unit")}
+        </option>
+      ))}
     </select>
   );
 }
@@ -251,7 +258,7 @@ export function MaterialsEditor({ materials, onAdd, onUpdate, onRemove, library,
               <option value="each">N per 1</option>
             </select>
             {itemRule(m) === "each" ? perInput(m) : <span style={{ color: "var(--ink-muted)" }}>1</span>}
-            <input name="material-unit" value={m.unit} onChange={(e) => onUpdate(m.id, { unit: e.target.value })} placeholder="unit" style={{ ...ip, width: 60, ...(ov("unit") ? { border: OV } : {}) }} />
+            <input name="material-unit" value={m.unit} onChange={(e) => onUpdate(m.id, { unit: e.target.value })} placeholder={units === "metric" ? "L" : "unit"} style={{ ...ip, width: 60, ...(ov("unit") ? { border: OV } : {}) }} />
             {ov("unit") && rv(m, "unit")}
             <span style={{ color: "var(--ink-muted)" }}>per</span>
             {itemRule(m) === "each" ? <span style={{ color: "var(--ink-muted)" }}>1</span> : perInput(m)}

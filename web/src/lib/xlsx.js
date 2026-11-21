@@ -214,7 +214,7 @@ export function reportWorkbook({ rows = [], bySheet = [], shapeRows = [], cols =
   // Materials — per condition, then the combined buy list (mirrors the CSV)
   const materials = [["Finish", "Material", "Qty", "Unit", "Coverage", "Note"]];
   for (const r of rows) for (const m of (r.materials || [])) {
-    materials.push([r.finish_tag, m.name, m.qty, m.unit, coverageLabel(m), m.note || ""]);
+    materials.push([r.finish_tag, m.name, m.qty, m.unit, coverageLabel(m, units), m.note || ""]);
   }
   const combined = materialsSummary(rows);
   if (combined.length) {

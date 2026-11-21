@@ -217,3 +217,34 @@ test("only a derived line is optional: room SF or plain runs on the row keep eve
   const withBox = price(brd({ material: 5, labor: 3 }), [...brdShapes, cnt("br")]);
   assert.deepEqual(withBox.lines.map((l: any) => [l.unit, l.status]), [["SF", "priced"], ["LF", "optional"], ["EA", "unpriced"]]);
 });
+
+test("metric materials: adhesive is in Litres (L) and coverage uses m² basis", () => {
+  // 79.76 SF ≈ 7.41 m²
+  const conds = [{
+    id: "cpt", finish_tag: "CPT-1", waste_pct: 5,
+    pricing: { unit: "m²", material: 50, labor: 20 },
+    materials: [{ id: "m1", name: "Adhesive", per: 6, basis: "area", unit: "L", price: 15, labor_price: 5 }],
+  }];
+  const rows = conditionTotals(conds, [area("cpt", 79.76)], { units: "metric" });
+  assert.equal(rows[0].materials[0].unit, "L");
+  assert.equal(rows[0].materials[0].basis_qty, 7.41);
+  assert.equal(rows[0].materials[0].qty, 2); // ceil(7.41 / 6) = 2 L
+  const est = priceEstimate({ rows, conditions: conds, units: "metric" });
+  assert.equal(est.lines[0].materials[0].unit, "L");
+  assert.equal(est.lines[0].materials[0].qty, 2);
+  assert.equal(est.lines[0].materials[0].labor_qty, 1.24); // 7.41 / 6
+  assert.equal(est.lines[0].materials[0].cost, 30); // 2 × $15
+  assert.equal(est.lines[0].materials[0].labor_cost, 6.2); // 1.24 × $5
+});
+
+test("metric materials: legacy imperial 'gal' unit auto-converts to 'L'", () => {
+  const conds = [{
+    id: "cpt", finish_tag: "CPT-1",
+    materials: [{ id: "m1", name: "Adhesive", per: 250, basis: "area", unit: "gal" }],
+  }];
+  const rows = conditionTotals(conds, [area("cpt", 79.76)], { units: "metric" });
+  assert.equal(rows[0].materials[0].unit, "L");
+  assert.equal(rows[0].materials[0].per, 6.1);
+  assert.equal(rows[0].materials[0].basis_qty, 7.41);
+  assert.equal(rows[0].materials[0].qty, 2); // ceil(7.41 / 6.1) = 2
+});

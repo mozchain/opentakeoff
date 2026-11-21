@@ -1815,7 +1815,7 @@ export default function TakeoffCanvas() {
   // seam tape) divides against. Handed to every conditionTotals scope below so
   // the HUD, the project roll-up, and a zone check agree with the Report on
   // what the layout welds.
-  const seamCtx = useMemo(() => ({ seamByShape: seamLfByShape(rollByCond) }), [rollByCond]);
+  const seamCtx = useMemo(() => ({ seamByShape: seamLfByShape(rollByCond), units }), [rollByCond, units]);
 
   // Cut drag (#136) — the self-contained element-drag pattern (the panel-resize
   // handle's): the cut's own <g> opts into pointer events in edit mode, captures
@@ -2314,7 +2314,27 @@ export default function TakeoffCanvas() {
     // to what it already billed at and say so, rather than let NaN reach the report
     const { conditions: conds, repaired: multRepaired } = repairConditionMultipliers(sanitizeConditionAttrs(a.conditions || []));   // strips corrupt attrs values so every reader can trust them (the client_info precedent)
     if (multRepaired.length) setCommitMsg(describeMultiplierRepair(multRepaired));
-    if (conds.length) { setConditions(conds); setActiveCond(conds[0].id); }
+    const normalizedConds = units === "metric" ? conds.map((c) => {
+      if (!c.materials?.length) return c;
+      let changed = false;
+      const materials = c.materials.map((m) => {
+        if (m.unit === "gal") {
+          changed = true;
+          const rawPer = Number(m.per) || 0;
+          const metricPer = rawPer > 0 ? Math.round(rawPer * 0.09290304 / 3.785411784 * 10) / 10 : 0;
+          return { ...m, unit: "L", per: metricPer };
+        }
+        if (m.unit === "lf") {
+          changed = true;
+          const rawPer = Number(m.per) || 0;
+          const metricPer = rawPer > 0 ? Math.round(rawPer * 0.3048 * 10) / 10 : 0;
+          return { ...m, unit: "m", per: metricPer };
+        }
+        return m;
+      });
+      return changed ? { ...c, materials } : c;
+    }) : conds;
+    if (normalizedConds.length) { setConditions(normalizedConds); setActiveCond(normalizedConds[0].id); }
     else { const seeded = seedConditions(templatesRef.current); setConditions(seeded); setActiveCond(seeded[0].id); }   // library templates first, flooring defaults as fallback
     // palette holds condition ids — de-dupe (a hand-edited/older payload could
     // repeat one, which would collide React keys and double-map a hotkey), drop
@@ -9708,7 +9728,7 @@ export default function TakeoffCanvas() {
   const isFamilyParent = (cs, id) => cs.some((c) => c.variant_of === id);
   // supporting-materials editing (operates on the active condition)
   const addMaterial = () => setConditions((cs) => {
-    const row = { id: uid("mat"), name: "", per: 0, basis: "area", unit: "", round: true };
+    const row = { id: uid("mat"), name: "", per: 0, basis: "area", unit: units === "metric" ? "L" : "", round: true };
     const next = cs.map((c) => (c.id === activeCond
       ? { ...c, materials: [...(c.materials || []), row], updated_at: nowIso() } : c));
     // a row added to the family reaches every area; a row added ON a twin is that twin's own
@@ -10297,7 +10317,7 @@ export default function TakeoffCanvas() {
       persistTemplates(templates.map((t) => ({ ...t, materials: (t.materials || []).map((m) => { if (m.lib_id !== libId) return m; const { lib_id: _l, ...rest } = m; return rest; }) })));
     }
   };
-  const addLibMaterial = () => persistMatLib([...matLib, { id: uid("lib"), name: "", unit: "", per: 0, basis: "area", round: true, note: "" }]);
+  const addLibMaterial = () => persistMatLib([...matLib, { id: uid("lib"), name: "", unit: units === "metric" ? "L" : "", per: 0, basis: "area", round: true, note: "" }]);
 
   // ── TakeoffsPanel wiring ───────────────────────────────────────────────────
   // The docked panel is memoized (React.memo) so canvas-only renders — the

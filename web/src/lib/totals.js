@@ -56,13 +56,22 @@ export function itemRaw(m, basisVal) {
   return itemRule(m) === "each" ? basisVal * per : basisVal / per;
 }
 const BASIS_LABEL = { linear: "LF", count: "EA", seam_lf: "seam LF" };
-export const basisLabel = (b) => BASIS_LABEL[b] || "SF";
+export function basisLabel(b, units = "imperial") {
+  if (units === "metric") {
+    if (b === "linear") return "m";
+    if (b === "seam_lf") return "seam m";
+    if (b === "count") return "EA";
+    return "m²";
+  }
+  return BASIS_LABEL[b] || "SF";
+}
 // "1 gal / 150 SF", "2 ea / 1 EA", plus "+ 5% waste" when the item carries one —
 // the Coverage cell of the CSV and Excel materials tabs. A coverage row with no
 // waste prints exactly what it always printed.
-export function coverageLabel(m) {
-  const u = m.unit || "unit";
-  const base = itemRule(m) === "each" ? `${m.per} ${u} / 1 ${basisLabel(m.basis)}` : `1 ${u} / ${m.per} ${basisLabel(m.basis)}`;
+export function coverageLabel(m, units = "imperial") {
+  const u = m?.unit || "unit";
+  const bLabel = basisLabel(m?.basis, units);
+  const base = itemRule(m) === "each" ? `${m?.per} ${u} / 1 ${bLabel}` : `1 ${u} / ${m?.per} ${bLabel}`;
   const w = itemWastePct(m);
   return w > 0 ? `${base} + ${w}% waste` : base;
 }
@@ -91,7 +100,7 @@ function accumulateRole(acc, s) {
 }
 
 /**
- * @param {{seamByShape?: Map<any, number>}|null} [ctx] the figured roll-layout
+ * @param {{seamByShape?: Map<any, number>, units?: "imperial"|"metric"}|string|null} [ctx] the figured roll-layout
  *   seam length per SHAPE (lib/rollTakeoff.js seamLfByShape) — what a
  *   materials row with basis "seam_lf" divides against. Omitted (every caller
  *   that has no roll context) those rows read 0, which is the honest answer:
@@ -101,6 +110,8 @@ function accumulateRole(acc, s) {
  */
 export function conditionTotals(conditions, shapes, ctx = null) {
   const seamByShape = ctx?.seamByShape instanceof Map ? ctx.seamByShape : null;
+  const units = typeof ctx === "string" ? ctx : ctx?.units || (typeof window !== "undefined" && window?.localStorage?.getItem("opentakeoff_units") === "imperial" ? "imperial" : (typeof window === "undefined" ? "imperial" : "metric"));
+  const isMetric = units === "metric";
   return conditions.map((c) => {
     const mult = c.multiplier || 1;
     const waste = Math.max(0, Number(c.waste_pct) || 0);
@@ -117,13 +128,32 @@ export function conditionTotals(conditions, shapes, ctx = null) {
     const total = floor + wall + border;
     // supporting materials: deterministic quantity = basis ÷ coverage, rounded up
     // to whole units (you buy whole buckets/bags). basis = this condition's measured
-    // area (SF), linear (LF), count (EA), or figured seam length (LF — weld rod,
+    // area (SF/m²), linear (LF/m), count (EA), or figured seam length (LF/m — weld rod,
     // seam tape). Coverage comes off the product data sheet.
     // An assembly item's rule ("each") and its own waste % ride along only
     // when set, so every row written before them reports byte-for-byte as before.
-    const materials = (c.materials || []).filter(isMaterialLine).map((m) => {
+    const materials = (c.materials || []).filter(isMaterialLine).map((rawM) => {
+      let m = rawM;
+      if (isMetric) {
+        if (m.unit === "gal") {
+          const rawPer = Number(m.per) || 0;
+          const metricPer = rawPer > 0 ? Math.round(rawPer * M2_PER_SF / 3.785411784 * 10) / 10 : 0;
+          m = { ...m, unit: "L", per: metricPer };
+        } else if (m.unit === "lf") {
+          const rawPer = Number(m.per) || 0;
+          const metricPer = rawPer > 0 ? Math.round(rawPer * M_PER_FT * 10) / 10 : 0;
+          m = { ...m, unit: "m", per: metricPer };
+        }
+      }
       const per = Math.max(0, Number(m.per) || 0);
-      const basisVal = m.basis === "linear" ? lf : m.basis === "count" ? ea : m.basis === "seam_lf" ? seam : total;
+      let basisVal = m.basis === "linear" ? lf : m.basis === "count" ? ea : m.basis === "seam_lf" ? seam : total;
+      if (isMetric) {
+        if (m.basis === "linear" || m.basis === "seam_lf") {
+          basisVal = basisVal * M_PER_FT;
+        } else if (m.basis !== "count") {
+          basisVal = basisVal * M2_PER_SF;
+        }
+      }
       const itemWaste = itemWastePct(m);
       let qty = itemRaw(m, basisVal) * (1 + itemWaste / 100);
       qty = m.round === false ? round2(qty) : Math.ceil(qty - 1e-9);
@@ -465,7 +495,7 @@ export function totalsToCsv(rows, projectName = "", bySheet = null, sheetLabel =
   // rates deliberately stay as entered (SF/LF-based) in metric mode — the
   // upstream metric contract; the report panel carries the footnote.
   const perCond = [];
-  for (const r of rows) for (const m of (r.materials || [])) perCond.push([r.finish_tag, m.name, m.qty, m.unit, coverageLabel(m), m.note || ""]);
+  for (const r of rows) for (const m of (r.materials || [])) perCond.push([r.finish_tag, m.name, m.qty, m.unit, coverageLabel(m, units), m.note || ""]);
   if (perCond.length) {
     lines.push("");
     lines.push(["Finish", "Material", "Qty", "Unit", "Coverage", "Note"].map(esc).join(","));
